@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="PD4Polarity" Id="{08c21e94-5dd1-0036-2cc6-0f04a8c43dd1}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE PD4Polarity :
+(
+	Positive := 64,
+	Negative := 0
+)USINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

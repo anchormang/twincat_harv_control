@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_PD6_HW" Id="{047bdd43-ec66-463b-bfc2-4e6ab75c7dd5}">
+    <Declaration><![CDATA[TYPE ST_PD6_HW :
+STRUCT
+	StatusWord 				AT %I* : UINT; 
+	OperationModeDisplay 	AT %I* : SINT;
+	ActualPosition 			AT %I* : DINT;
+	ActualVelocity 			AT %I* : INT;
+	
+	
+	ControlWord 	AT %Q* : UINT;
+	HomingMethod 	AT %Q* : USINT;
+	TargetVelocity 	AT %Q* : INT;
+	ProfileVelocity AT %Q* : UDINT;
+	Accel 			AT %Q* : UDINT;				
+	Decel 			AT %Q* : UDINT;				
+	SubmodeSelect	AT %Q* : UDINT;	
+	OperationMode 	AT %Q* : SINT;	
+	TargetPosition 	AT %Q* : DINT;		
+	Polarity 		AT %Q* : USINT;		
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

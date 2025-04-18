@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <ImagePool Name="Icons" Id="{7b661a4a-d1f2-47d9-a57e-6aec1364e5bd}">
+    <XmlArchive>
+      <Data>
+        <o xml:space="preserve" t="ImagePoolObject">
+          <v n="UniqueIdGenerator">"41"</v>
+          <l n="BitmapPool" t="ArrayList" cet="ImagePoolItem">
+            <o>
+              <v n="BitmapID">"red-x-icon"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\red-x-icon.png"</v>
+              <v n="ItemID">7</v>
+            </o>
+            <o>
+              <v n="BitmapID">"advanced farm_logo_color"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\advanced farm_logo_color.png"</v>
+              <v n="ItemID">4</v>
+            </o>
+            <o>
+              <v n="BitmapID">"caution-icon"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\caution-icon.png"</v>
+              <v n="ItemID">5</v>
+            </o>
+            <o>
+              <v n="BitmapID">"gas-station-icon"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\gas-station-icon.png"</v>
+              <v n="ItemID">6</v>
+            </o>
+            <o>
+              <v n="BitmapID">"green-checkmark-icon"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\green-checkmark-icon.png"</v>
+              <v n="ItemID">13</v>
+            </o>
+            <o>
+              <v n="BitmapID">"setting-icon"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\setting-icon.png"</v>
+              <v n="ItemID">17</v>
+            </o>
+            <o>
+              <v n="BitmapID">"home-icon"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\home-icon.png"</v>
+              <v n="ItemID">20</v>
+            </o>
+            <o>
+              <v n="BitmapID">"turtle-animal-icon"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\turtle-animal-icon.png"</v>
+              <v n="ItemID">22</v>
+            </o>
+            <o>
+              <v n="BitmapID">"bunny-rabbit-icon"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\bunny-rabbit-icon.png"</v>
+              <v n="ItemID">30</v>
+            </o>
+            <o>
+              <v n="BitmapID">"column-chart-icon"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\column-chart-icon.png"</v>
+              <v n="ItemID">32</v>
+            </o>
+            <o>
+              <v n="BitmapID">"tools-icon"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|..\..\Icons\tools-icon.png"</v>
+              <v n="ItemID">34</v>
+            </o>
+            <o>
+              <v n="BitmapID">""</v>
+              <v n="FileID">""</v>
+              <v n="ItemID">36</v>
+            </o>
+          </l>
+          <v n="GuidInit">{4bb72f24-acb4-4edb-9f06-ab07fd0e9e4b}</v>
+          <v n="GuidReInit">{121698f0-d5a4-46ec-9320-f5b5d8328953}</v>
+          <v n="GuidExitX">{62d856c0-366b-4129-ab4b-bad82f2c7afa}</v>
+          <v n="ValidIds">true</v>
+        </o>
+      </Data>
+      <TypeList>
+        <Type n="ArrayList">System.Collections.ArrayList</Type>
+        <Type n="Boolean">System.Boolean</Type>
+        <Type n="Guid">System.Guid</Type>
+        <Type n="ImagePoolItem">{215b2719-0347-4e4d-ba85-8bcd66946f66}</Type>
+        <Type n="ImagePoolObject">{bb0b9044-714e-4614-ad3e-33cbdf34d16b}</Type>
+        <Type n="Int32">System.Int32</Type>
+        <Type n="String">System.String</Type>
+      </TypeList>
+    </XmlArchive>
+  </ImagePool>
+</TcPlcObject>

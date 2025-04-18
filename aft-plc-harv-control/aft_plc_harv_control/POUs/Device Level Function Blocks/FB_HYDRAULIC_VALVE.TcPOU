@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_HYDRAULIC_VALVE" Id="{b136142e-429b-4c48-853b-9aa6b2b9c920}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_HYDRAULIC_VALVE
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	SolenoidExtend	: BOOL;
+	SolenoidRetract	: BOOL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="Extend" Id="{376c3008-aa6a-4c72-a032-f4909481f840}">
+      <Declaration><![CDATA[METHOD Extend : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SolenoidExtend := TRUE;
+SolenoidRetract := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Neutral" Id="{5e107f79-66ac-44f3-b152-d0bd24930a39}">
+      <Declaration><![CDATA[METHOD Neutral : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SolenoidExtend := FALSE;
+SolenoidRetract := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Retract" Id="{d684bcf7-76cd-46c9-aa2e-ea5057b17140}">
+      <Declaration><![CDATA[METHOD Retract : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SolenoidExtend := FALSE;
+SolenoidRetract := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_HYDRAULIC_VALVE">
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_HYDRAULIC_VALVE.Extend">
+      <LineId Id="5" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_HYDRAULIC_VALVE.Neutral">
+      <LineId Id="5" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_HYDRAULIC_VALVE.Retract">
+      <LineId Id="5" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

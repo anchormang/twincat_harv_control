@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_SDO_WRITE" Id="{9ab28efe-49c4-41e1-a207-209ac217e70e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_SDO_WRITE
+VAR_INPUT
+	ADSNetID		: STRING(23);   			(* The AMSNetID addresses the EL6751. Can be empty if only one local single channel card is present*)
+    PortNr			: WORD;           			(* The Port No. addresses the CANopen Node (see System Manager) *)
+    CO_Index		: DWORD;        			(* This is the Index of the CANopen Object Dictionary Entry*)
+    CO_SubIndex		: DWORD;     				(*This is the Sub-Index of the CANopen Object Dictionary Entry*)
+    DataLength		: DWORD;      				(* This is the Length of the CANopen Object Dictionary Entry*)
+    StartWriting	: BOOL;     				(*only reset to FALSE after WriteDataFinished=TRUE*)
+    WriteData		: ARRAY[0..255] OF BYTE; 	(*This array contains the data to be written to the CANopen Object Dictionary*)
+END_VAR
+VAR_OUTPUT
+	WriteDataFinished	: BOOL;
+    Error				: DWORD;
+END_VAR
+VAR
+	state		: BYTE := 0;
+    ADSWRITE	: ADSWRITE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE
+state OF
+    0:
+        IF StartWriting THEN
+           WriteDataFinished := FALSE;
+           Error := 0;
+           ADSWrite(
+               NETID:= ADSNetID,
+               PORT:= PortNr,
+               IDXGRP:= CO_Index,
+               IDXOFFS:= CO_SubIndex,
+               LEN:= DataLength,
+               SRCADDR:= ADR(WriteData),
+               WRITE:= TRUE,
+               TMOUT := T#1s
+               );
+           IF ADSWrite.err THEN
+               state := 2;
+               WriteDataFinished := TRUE;
+               Error := ADSWrite.ErrId;
+           ELSE
+               state := 1;
+           END_IF
+        ELSE
+           ADSWrite(
+               NETID:= '',
+               PORT:= PortNr,
+               IDXGRP:= CO_Index,
+               IDXOFFS:= CO_SubIndex,
+               LEN:= DataLength,
+               SRCADDR:= ADR(WriteData),
+               WRITE:= FALSE,
+               TMOUT := T#1s
+               );
+        END_IF
+    1:
+        ADSWrite(WRITE:= FALSE);
+        IF ADSWrite.err THEN
+           state := 2;
+           WriteDataFinished := TRUE;
+           Error := ADSWrite.ErrId;
+        ELSE
+           IF NOT ADSWrite.busy THEN
+               state := 2;
+               WriteDataFinished := TRUE;
+           END_IF
+        END_IF
+    2:
+        ADSWrite(WRITE:= FALSE);
+        state := 0;
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_SDO_WRITE">
+      <LineId Id="21" Count="49" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

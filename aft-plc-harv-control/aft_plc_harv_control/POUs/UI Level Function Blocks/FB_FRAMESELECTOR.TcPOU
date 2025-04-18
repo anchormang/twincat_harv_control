@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <POU Name="FB_FRAMESELECTOR" Id="{a913e27a-a3ee-4710-8068-da1f861e577a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_FRAMESELECTOR
+VAR
+	//SelectedFrame	: FrameSelect;
+	SelectedFrame : INT := 0;
+	ShowFrame		: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <LineIds Name="FB_FRAMESELECTOR">
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_READ_HW" Id="{ac7844ff-7952-49bf-b678-2d246b8cfef7}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_READ_HW
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*READ HARDWARE FUCNTION BLOCK
+
+	Reads all variables from devices on the EtherCAT network and
+	assigns them to their relevant program variables.  This will
+	happen every PLC scan*)
+
+(*Left Drive Motor*)
+//HARV.DriveSys.DriveLeftIN.ActualVelocity := MOTORS.DriveLeft.ActualVelocity;
+HARV.DriveSys.DriveLeftIN.StatusWord 			:= MOTORS.DriveLeft.StatusWord;
+HARV.DriveSys.DriveLeftIN.ActualVelocity 		:= MOTORS.DriveLeft.ActualVelocity;
+HARV.DriveSys.DriveLeftIN.BatteryVoltage		:= MOTORS.DriveLeft.BatteryVoltage;
+HARV.DriveSys.DriveLeftIN.BatteryCurrent		:= MOTORS.DriveLeft.BatteryCurrent;
+HARV.DriveSys.DriveLeftIN.HeatSinkTemp			:= MOTORS.DriveLeft.HeatsinkTemp;
+HARV.DriveSys.DriveLeftIN.CapacitorVoltage		:= MOTORS.DriveLeft.CapacitorVoltage;
+
+(*Right Drive Motor*)
+HARV.DriveSys.DriveRightIN.StatusWord			:= MOTORS.DriveRight.StatusWord;
+HARV.DriveSys.DriveRightIN.ActualVelocity 		:= MOTORS.DriveRight.ActualVelocity;
+HARV.DriveSys.DriveRightIN.BatteryVoltage		:= MOTORS.DriveRight.BatteryVoltage;
+HARV.DriveSys.DriveRightIN.BatteryCurrent		:= MOTORS.DriveRight.BatteryCurrent;
+HARV.DriveSys.DriveRightIN.HeatSinkTemp			:= MOTORS.DriveRight.HeatsinkTemp;
+HARV.DriveSys.DriveRightIN.CapacitorVoltage		:= MOTORS.DriveRight.CapacitorVoltage;
+
+(*Left Steering Motor*)
+HARV.DriveSys.SteerLeftIN.StatusWord 			:= MOTORS.SteerLeft.StatusWord;
+HARV.DriveSys.SteerLeftIN.ActualPosition 		:= MOTORS.SteerLeft.ActualPosition;
+HARV.DriveSys.SteerLeftIN.ActualVelocity 		:= MOTORS.SteerLeft.ActualVelocity;
+HARV.DriveSys.SteerLeftIN.OperationModeDisplay 	:= MOTORS.SteerLeft.OperationModeDisplay;
+
+(*Right Steering Motor*)
+HARV.DriveSys.SteerRightIN.StatusWord 			:= MOTORS.SteerRight.StatusWord;
+HARV.DriveSys.SteerRightIN.ActualPosition 		:= MOTORS.SteerRight.ActualPosition;
+HARV.DriveSys.SteerRightIN.ActualVelocity 		:= MOTORS.SteerRight.ActualVelocity;
+HARV.DriveSys.SteerRightIN.OperationModeDisplay := MOTORS.SteerRight.OperationModeDisplay;
+
+(*Left Conveyance Motor*)
+
+(*Right Conveyance Motor*)
+
+(*Tilt Control Inputs*)
+
+(*Digital Inputs EL1018*)
+//HARV.DriveSys.JohnButtonInput := IO.DI_SLICE_0[0];
+UI.PickButton := IO.DI_SLICE_0[0];
+HARV.TiltControl.PressureSwitch := IO.DI_SLICE_0[1];
+UI.EStop := IO.DI_SLICE_0[2];
+
+(*Analog Inputs EL3064*)
+HARV.DriveSys.JoyStick_X 		:= IO.AI_SLICE_0[0];
+HARV.DriveSys.JoyStick_Y 		:= IO.AI_SLICE_0[1];
+//HARV.DriveSys.JoyStick_Button 	:= IO.AI_SLICE_0[2];
+HARV.TiltControl.IMU_Roll		:= IO.AI_SLICE_0[2];
+HARV.TiltControl.IMU_Pitch		:= IO.AI_SLICE_0[3];
+
+(**)]]></ST>
+    </Implementation>
+    <LineIds Name="FB_READ_HW">
+      <LineId Id="32" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="48" Count="0" />
+      <LineId Id="50" Count="1" />
+      <LineId Id="33" Count="1" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="118" Count="3" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="110" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="123" Count="2" />
+      <LineId Id="122" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="21" Count="1" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="29" Count="2" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="77" Count="2" />
+      <LineId Id="76" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="60" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="63" Count="0" />
+      <LineId Id="151" Count="0" />
+      <LineId Id="143" Count="0" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="62" Count="0" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="100" Count="2" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="135" Count="0" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="80" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

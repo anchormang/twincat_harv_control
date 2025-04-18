@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="PD6OperationMode" Id="{f0938637-7708-4d6d-8179-abaf49ad161d}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE PD6OperationMode :
+(
+	ProfilePositionMode := 1,
+	VelocityMode := 2,
+	ProfileVelocityMode := 3,
+	ProfileTorqueMode := 4,
+	HomingMode := 6,
+	CyclicSyncPositionMode := 8
+)SINT;
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

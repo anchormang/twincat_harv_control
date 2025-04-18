@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="MOTORS" Id="{1b5c2305-baab-4804-bcfd-9cfea23d5eb8}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL
+	DriveLeft	: ST_SEVCON_HW;
+	DriveRight	: ST_SEVCON_HW;
+//	DriveLeft	: ST_PD6_HW;
+//	DriveRight	: ST_PD6_HW;
+//	SteerLeft_PD6	: ST_PD6_HW;
+//	SteerRight_PD6	: ST_PD6_HW;
+	SteerLeft	: ST_PD4_HW;
+	SteerRight	: ST_PD4_HW;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

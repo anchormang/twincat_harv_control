@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_DRIVE_TEST" Id="{5ef7f248-2813-4803-9c60-282f0431de80}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DRIVE_TEST EXTENDS TcUnit.FB_TestSuite
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SteerAngleTest();
+DiffDriveTest();]]></ST>
+    </Implementation>
+    <Method Name="DiffDriveTest" Id="{2ddda7bd-148f-4d06-9902-cc6fa47938b4}">
+      <Declaration><![CDATA[METHOD DiffDriveTest : REFERENCE TO FB_Test
+VAR
+	
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[TEST('DifferentialDriveTest');
+
+
+
+TEST_FINISHED();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SteerAngleTest" Id="{c51523c3-14fd-4809-a98e-7fb50e3f3285}">
+      <Declaration><![CDATA[METHOD SteerAngleTest : REFERENCE TO FB_Test
+VAR
+	Drive	: FB_DRIVE;
+	AngleInput			: LREAL := 45;
+	LeftAngleCalc		: LREAL;
+	RightAngleCalc		: LREAL;	
+	LeftAngleExpected	: LREAL := 38.89;
+	RightAngleExpected	: LREAL := 51.03;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[TEST('SteerAngleTest');
+
+(*Zero Steering Angle*)
+Drive.CalcWheelAngle(0);
+LeftAngleCalc := Drive.SteerLeftAngleTest;
+RightAngleCalc := Drive.SteerRightAngleTest;
+			
+AssertEquals_LREAL(Expected := 0,
+				Actual := LeftAngleCalc,
+				Delta := 0.1,
+				Message := 'Left Angle 0 Calculation Incorrect');
+				
+AssertEquals_LREAL(Expected := 0,
+				Actual := RightAngleCalc,
+				Delta := 0.1,
+				Message := 'Right Angle 0 Calculation Incorrect');
+
+(*45 Degree Steering Angle*)				
+Drive.CalcWheelAngle(AngleInput);
+LeftAngleCalc := Drive.SteerLeftAngleTest;
+RightAngleCalc := Drive.SteerRightAngleTest;
+
+AssertEquals_LREAL(Expected := LeftAngleExpected,
+				Actual := LeftAngleCalc,
+				Delta := 0.1,
+				Message := 'Left Angle 45 Calculation Incorrect');
+				
+AssertEquals_LREAL(Expected := RightAngleExpected,
+				Actual := RightAngleCalc,
+				Delta := 0.1,
+				Message := 'Right Angle 45 Calculation Incorrect');
+
+(*-45 Degree Steering Angle*)			
+Drive.CalcWheelAngle(-AngleInput);
+LeftAngleCalc := Drive.SteerLeftAngleTest;
+RightAngleCalc := Drive.SteerRightAngleTest;
+
+AssertEquals_LREAL(Expected := -RightAngleExpected,
+				Actual := LeftAngleCalc,
+				Delta := 0.1,
+				Message := 'Left Angle -45 Calculation Incorrect');
+				
+AssertEquals_LREAL(Expected := -LeftAngleExpected,
+				Actual := RightAngleCalc,
+				Delta := 0.1,
+				Message := 'Right Angle -45 Calculation Incorrect');
+				
+(*Positive Max Steering Angle*)
+
+(*Negative Max Steering Angle*)
+
+(*Positive Out of Range Steering Angle*)
+
+(*Negative Out of Range Steering Angle*)
+			
+TEST_FINISHED();]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_DRIVE_TEST">
+      <LineId Id="9" Count="0" />
+      <LineId Id="11" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DRIVE_TEST.DiffDriveTest">
+      <LineId Id="5" Count="0" />
+      <LineId Id="8" Count="1" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="6" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DRIVE_TEST.SteerAngleTest">
+      <LineId Id="5" Count="0" />
+      <LineId Id="79" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="20" Count="1" />
+      <LineId Id="41" Count="5" />
+      <LineId Id="48" Count="2" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="80" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="53" Count="1" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="56" Count="8" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="67" Count="11" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="82" Count="1" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="84" Count="0" />
+      <LineId Id="86" Count="1" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="30" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

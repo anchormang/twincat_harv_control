@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_SDO_READ" Id="{a175851d-db2c-4cde-a925-685350e4e395}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_SDO_READ
+VAR_INPUT
+	ADSNetID:STRING(23); (* The AMSNetID addresses the EL6751. Can be empty if only one local single channel card is present*)
+    PortNr:WORD;         (* This Port No. addresses the CANopen Node (see System Manager) *)
+    CO_Index:DWORD;      (* This is the Index of the CANopen Object Dictionary Entry*)
+    CO_SubIndex:DWORD;   (* This is the Sub-Index of the CANopen Object Dictionary Entry*)
+    DataLength:DWORD;    (* This is the Length of the CANopen Object Dictionary Entry*)
+    StartReading:BOOL;   (* only reset to FALSE after ReadDataAvailable=TRUE*)
+END_VAR
+VAR_OUTPUT
+	ReadData:ARRAY[0..255] OF BYTE;
+    ReadDataAvailable:BOOL;
+    Error:DWORD;
+END_VAR
+VAR
+	state:BYTE := 0;
+    ADSREAD:ADSREAD;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE
+state OF
+    0:
+        IF StartReading THEN
+           ReadDataAvailable := FALSE;
+           Error := 0;
+           ADSRead(
+               NETID:= ADSNetID,
+               PORT:= PortNr,
+               IDXGRP:= CO_Index,
+               IDXOFFS:= CO_SubIndex,
+               LEN:= DataLength,
+               DESTADDR:= ADR(ReadData),
+               READ:= TRUE,
+               TMOUT := T#1s
+               );
+           IF ADSRead.err THEN
+               state := 2;
+               ReadDataAvailable := TRUE;
+               Error := ADSRead.ErrId;
+           ELSE
+               state := 1;
+           END_IF
+        ELSE
+           ADSRead(
+               NETID:= ADSNetID,
+               PORT:= PortNr,
+               IDXGRP:= CO_Index,
+               IDXOFFS:= CO_SubIndex,
+               LEN:= DataLength,
+               DESTADDR:= ADR(ReadData),
+               READ:= FALSE,
+               TMOUT := T#1s
+           );
+        END_IF
+    1:
+        ADSRead(READ:= FALSE);
+        IF ADSRead.err THEN
+           state := 2;
+           ReadDataAvailable := TRUE;
+           Error := ADSRead.ErrId;
+        ELSE
+           IF NOT ADSRead.busy THEN
+               state := 2;
+               ReadDataAvailable := TRUE;
+           END_IF
+        END_IF
+    2:
+        ADSRead(READ:= FALSE);
+        state := 0;
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_SDO_READ">
+      <LineId Id="26" Count="49" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

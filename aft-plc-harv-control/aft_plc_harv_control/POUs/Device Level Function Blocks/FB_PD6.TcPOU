@@ -1,0 +1,199 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_PD6" Id="{d78d169c-300d-4466-aab9-3ba7bfb318c4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PD6
+VAR_INPUT
+	PD6_IN 			: ST_PD6_IN;
+	Enable 			: BOOL;
+	ErrorReset 		: BOOL;
+	TargetVelocity 	: INT;
+	TargetPosition	: DINT;			// Check variable type
+	Self 			: INT;
+END_VAR
+VAR_OUTPUT
+	PD6_OUT : ST_PD6_OUT;
+	Ready 	: BOOL;
+	Error	: BOOL;
+END_VAR
+VAR
+//	State 		: DINT;
+	State		: (DEFAULT, INIT, SWITCH_ON_DISABLED, READY_TO_SWITCH_ON, SWITCHED_ON, OPERATION_ENABLED, ERROR);
+	PrevState 	: (DEFAULT, INIT, SWITCH_ON_DISABLED, READY_TO_SWITCH_ON, SWITCHED_ON, OPERATION_ENABLED, ERROR);
+	StateEntry 	: BOOL;
+	Homed		: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// POWER FSM State Machine for EtherCAT PD6 Control
+
+IF State <> PrevState THEN
+	StateEntry := TRUE;
+	PrevState := State;
+ELSE
+	StateEntry := FALSE;
+END_IF
+
+CASE State OF
+	DEFAULT:
+		State := INIT;
+		
+	INIT:
+		Ready := FALSE;
+		PD6_OUT.ControlWord := PD6ControlWord.PulseInhibit;
+		PD6_OUT.Polarity := PD6Polarity.Positive;
+		
+		PD6_OUT.OperationMode := PD6OperationMode.HomingMode;
+		PD6_OUT.HomingMethod := 35;									// Zero at current position
+		PD6_OUT.ControlWord := PD6ControlWord.StartHoming;
+		
+		IF PD6_IN.ActualPosition = 0 THEN
+//			SetMode(PD6OperationMode.ProfilePositionMode);
+//			SetAbsoluteMotion();
+			SetMode(PD6OperationMode.VelocityMode);
+			State := SWITCH_ON_DISABLED;
+		END_IF
+
+	SWITCH_ON_DISABLED:
+		IF StateEntry THEN
+			PD6_OUT.ControlWord := PD6ControlWord.PulseInhibit;
+			PD6_OUT.TargetVelocity := 0;
+		END_IF
+		
+		IF ((PD6_IN.StatusWord AND PD6StatusWord.SwitchOnDisabled) = PD6StatusWord.SwitchOnDisabled) THEN
+			PD6_OUT.ControlWord := PD6ControlWord.Shutdown;
+			State := READY_TO_SWITCH_ON;
+		END_IF
+		
+	READY_TO_SWITCH_ON:
+		IF ((PD6_IN.StatusWord AND PD6StatusWOrd.ReadyToSwitchOn) = PD6StatusWOrd.ReadyToSwitchOn) THEN
+			PD6_OUT.ControlWord := PD6ControlWord.SwitchOn;
+			State := SWITCHED_ON;
+		END_IF
+		
+	SWITCHED_ON:
+		IF StateEntry THEN
+			Ready := TRUE;
+		END_IF
+		
+		IF (((PD6_IN.StatusWord AND PD6StatusWOrd.SwitchedOn) = PD6StatusWOrd.SwitchedOn) AND Enable) THEN
+			PD6_OUT.TargetPosition := PD6_IN.ActualPosition;
+			PD6_OUT.ControlWord := PD6ControlWord.EnableOperation;
+			State := OPERATION_ENABLED;
+		END_IF
+		
+	OPERATION_ENABLED:
+		IF StateEntry THEN
+			PD6_OUT.TargetPosition := PD6_IN.ActualPosition;
+			TargetPosition := PD6_IN.ActualPosition;
+		END_IF
+		
+//		PD6_OUT.TargetPosition := TargetPosition;
+//		ToggleMoveBit();
+		PD6_OUT.TargetVelocity := TargetVelocity;	
+		
+		IF NOT Enable THEN
+			PD6_OUT.TargetVelocity := 0;
+//			PD6_OUT.TargetPosition := PD6_IN.ActualPosition;
+			PD6_OUT.ControlWord := PD6ControlWord.DisableOperation;
+			State := SWITCHED_ON;
+		END_IF
+		
+	ERROR:
+		IF StateEntry THEN
+			Ready := FALSE;
+			Error := TRUE;	
+		END_IF
+		
+		IF ErrorReset THEN
+			PD6_OUT.ControlWord := PD6ControlWord.FaultReset;
+			IF ((PD6_IN.StatusWord AND PD6StatusWOrd.Fault) = 0) THEN
+				Error := FALSE;
+				State := SWITCH_ON_DISABLED;
+			END_IF
+		END_IF
+END_CASE
+
+IF ((PD6_IN.StatusWord AND PD6StatusWord.Fault) = PD6StatusWord.Fault) THEN
+	State := ERROR;
+END_IF]]></ST>
+    </Implementation>
+    <Method Name="SetAbsoluteMotion" Id="{7ff8dd09-6da2-405b-9c8a-ae0f6cc5cc21}">
+      <Declaration><![CDATA[METHOD SetAbsoluteMotion : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetMaxCurrent" Id="{01cb90b0-fad2-4956-87ca-eaf437499ccb}">
+      <Declaration><![CDATA[METHOD SetMaxCurrent : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetMode" Id="{a30828b8-096b-4ba2-94c9-052f1e96a8a8}">
+      <Declaration><![CDATA[METHOD SetMode : BOOL
+VAR_INPUT
+	OperationMode	: PD6OperationMode;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[PD6_OUT.OperationMode := OperationMode;
+PD6_OUT.SubmodeSelect := 1;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetMotionProfile" Id="{3fe971fa-b744-4ffa-bb2c-ab2ae690b12a}">
+      <Declaration><![CDATA[METHOD SetMotionProfile : BOOL
+VAR_INPUT
+	Velocity	: UDINT;
+	Accel		: UDINT;
+	Decel		: UDINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[PD6_OUT.ProfileVelocity := Velocity;
+PD6_OUT.Accel := Accel;
+PD6_OUT.Decel := Decel;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ToggleMoveBit" Id="{7539f0ab-fbb0-4518-b6aa-15281f9c39c3}">
+      <Declaration><![CDATA[METHOD ToggleMoveBit : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (PD6_OUT.ControlWord AND PD6ControlWord.StartMove) = PD6ControlWord.StartMove THEN
+	PD6_OUT.ControlWord := (PD6_OUT.ControlWord AND (NOT PD6ControlWord.StartMove));
+ELSE
+	PD6_OUT.ControlWord := (PD6_OUT.ControlWord OR PD6ControlWord.StartMove);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_PD6">
+      <LineId Id="40" Count="90" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PD6.SetAbsoluteMotion">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PD6.SetMaxCurrent">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PD6.SetMode">
+      <LineId Id="6" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PD6.SetMotionProfile">
+      <LineId Id="6" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PD6.ToggleMoveBit">
+      <LineId Id="6" Count="3" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

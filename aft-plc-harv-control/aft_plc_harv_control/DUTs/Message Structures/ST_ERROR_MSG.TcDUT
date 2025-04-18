@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_ERROR_MSG" Id="{54450085-b389-41ad-80ee-7c845964cbb8}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_ERROR_MSG :
+STRUCT
+	Timestamp	: DT;
+	Location	: STRING;
+	ErrorCode	: INT;
+	Description	: STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

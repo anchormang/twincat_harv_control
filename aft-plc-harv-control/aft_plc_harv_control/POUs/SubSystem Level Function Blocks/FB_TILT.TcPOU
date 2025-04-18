@@ -1,0 +1,779 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <POU Name="FB_TILT" Id="{35896adb-a164-437c-adc9-d5b92e263639}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_TILT
+VAR_INPUT
+	IMU_Roll				: INT;
+	IMU_Pitch				: INT;
+	AutoTiltControlEnable	: BOOL;
+	ManualTiltControlEnable : BOOL;
+	StartupEnable			: BOOL;
+	TestModeEnable			: BOOL;
+	PressureSwitch			: BOOL;
+END_VAR
+VAR_OUTPUT
+	RollValveLeft	: FB_HYDRAULIC_VALVE;
+	RollValveRight	: FB_HYDRAULIC_VALVE;
+	PitchValve		: FB_HYDRAULIC_VALVE;
+	PumpContactor	: BOOL;
+	Error			: BOOL;
+	ErrorCode		: DINT;
+	Ready			: BOOL;
+END_VAR
+VAR
+	TiltDisplacement		: REAL;
+	TiltLeftDisplacement	: REAL;
+	TiltRightDisplacement	: REAL;
+	
+	RollAngle				: REAL;
+	PitchAngle				: REAL;
+	SlopeAngle				: REAL;
+	
+	State					: (DEFAULT, INIT, IDLE, STARTUP, MANUAL, AUTO, TEST, ERROR);
+	PrevState				: (DEFAULT, INIT, IDLE, STARTUP, MANUAL, AUTO, TEST, ERROR);
+	StateEntry				: BOOL;
+	
+	StartHoming				: BOOL;
+	Homed					: BOOL;
+	CurrentAxis				: INT;
+	RearStartPosition		: BOOL;
+	FrontStartPosition		: BOOL;
+	InStartPosition			: BOOL;
+	StartupTimer			: TON;
+	StartDelay				: TIME := T#1500MS;
+	PumpStartupTimer		: TON;
+	PumpStartupDelay		: TIME := T#2000MS;
+	CylinderBumpTimer		: TON;
+	CylinderBumpDelay		: TIME := T#300MS;
+	
+	RollAxisLevel			: BOOL;
+	PitchAxisLevel			: BOOL;
+	
+	RollCW_Command			: BOOL;
+	RollCCW_Command			: BOOL;
+	PitchUp_Command			: BOOL;
+	PitchDown_Command		: BOOL;
+	Raise_Command			: BOOL;
+	Lower_Command			: BOOL;
+	Level_Command			: BOOL;
+	
+	IMU_Roll_Avg			: INT;
+	RollDataBuffer			: ARRAY[0..9] OF INT;
+	IMU_Pitch_Avg			: INT;
+	PitchDataBuffer			: ARRAY[0..9] OF INT;
+	
+	PressureSwitch_FTRIG	: F_TRIG;
+	RearLeftCheck			: BOOL;
+	RearRightCheck			: BOOL;
+	FrontCheck				: BOOL;
+	PitchAngleStart			: REAL;
+	RollAngleStart			: REAL;
+END_VAR
+VAR CONSTANT
+	IMU_DeadBand			: INT := 400;
+	IMU_Center				: INT := 16535;
+	IMU_MaxAngle			: REAL := 30;
+	RollControlThreshold	: REAL := 1.0;		// angular delta where the tilt controller kicks in
+	PitchControlThreshold	: REAL := 1.0;
+	PitchStartupAngle		: REAL := 7.0;		// roughly half stroke on rear cylinders when starting flat
+	MaxRollAngle			: REAL := 10;
+	MaxPitchAngle			: REAL := 20;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+IF State <> PrevState THEN
+	StateEntry := TRUE;
+	PrevState := State;
+ELSE
+	StateEntry := FALSE;
+END_IF
+
+PressureSwitch_FTRIG.CLK := PressureSwitch;
+
+CASE State OF
+	DEFAULT:
+		State := INIT;
+		
+	INIT:
+		IF StateEntry THEN
+			RearStartPosition := FALSE;
+			FrontStartPosition := FALSE;
+			InStartPosition := FALSE;
+			StartupTimer.PT := StartDelay;
+			PumpStartupTimer.PT := PumpStartupDelay;
+			CylinderBumpTimer.PT := CylinderBumpDelay;
+		END_IF
+		
+		State := IDLE;
+		
+	IDLE:
+		IF StateEntry THEN
+			Hold(TRUE);
+		END_IF
+		
+		IF AutoTiltControlEnable AND InStartPosition THEN
+			State := Auto;
+		ELSIF ManualTiltControlEnable THEN
+			State := MANUAL;
+		ELSIF StartupEnable THEN
+			State := STARTUP;
+		ELSIF TestModeEnable THEN
+			State := TEST;
+		END_IF
+	
+	STARTUP:
+		IF StateEntry THEN
+			PumpContactor := TRUE;
+			PumpStartupTimer.IN := TRUE;
+			PitchAngleStart := PitchAngle;
+			RollAngleStart	:= RollAngle;
+		END_IF	
+		
+		IF PumpStartupTimer.Q THEN
+			IF (NOT RearStartPosition) AND (NOT FrontStartPosition) THEN
+				RollValveLeft.Extend();
+				RollValveRight.Extend();
+				IF PitchAngle <= (PitchAngleStart - PitchStartupAngle) THEN
+					RollValveLeft.Neutral();
+					RolLValveRight.Neutral();
+					StartupTimer.IN := FALSE;
+					RearStartPosition := TRUE;
+				END_IF
+			ELSIF( RearStartPosition) AND (NOT FrontStartPosition) THEN
+				PitchUp(TRUE);
+				IF PitchAngle >= PitchAngleStart THEN
+					PitchUp(FALSE);
+					FrontStartPosition := TRUE;
+					InStartPosition := TRUE;
+				END_IF
+			END_IF
+		END_IF
+		
+		IF NOT StartupEnable OR InStartPosition THEN
+			PumpStartupTimer.IN := FALSE;
+			Hold(TRUE);
+			PumpContactor := FALSE;
+			StartupEnable := FALSE;
+			State := IDLE;
+		END_IF
+	
+	MANUAL:	
+		IF StateEntry THEN
+			PumpContactor := TRUE;
+		END_IF
+		
+		IF RollCW_Command THEN
+			RollCW(TRUE);
+			IF RollAngle >= 8.0 THEN
+				RollCW(FALSE);
+				RollCW_Command := FALSE;
+			END_IF
+		ELSIF RollCCW_Command THEN
+			RollCCW(TRUE);
+			IF RollAngle <= -8.0 THEN
+				RollCCW(FALSE);
+				RollCCW_Command := FALSE;
+			END_IF
+		ELSIF Level_Command THEN
+			IF RollAngle > 0 AND NOT RollAxisLevel THEN
+				RollCCW(TRUE);
+				RollAxisLevel := FALSE;
+			ELSIF RollAngle < 0 AND NOT RollAxisLevel THEN
+				RollCW(TRUE);
+				RollAxisLevel := FALSE;
+			ELSE
+				RollCW(FALSE);
+				RollCCW(FALSE);
+				RollAxisLevel := TRUE;
+			END_IF
+			
+			IF PitchAngle > 0 AND RollAxisLevel THEN
+				PitchDown(TRUE);
+			ELSIF PitchANgle < 0 AND RollAxisLevel THEN
+				PitchUp(TRUE);
+			ELSE
+				PitchValve.Neutral();
+				PitchAxisLevel := TRUE;
+			END_IF
+			
+			IF RollAxisLevel AND PitchAxisLevel THEN
+				Level_Command := FALSE;
+			END_IF
+		ELSIF Raise_Command THEN
+			Raise(TRUE);
+		ELSIF Lower_Command THEN
+			Lower(TRUE);
+		ELSIF PitchUp_Command THEN
+			PitchUp(TRUE);
+		ELSIF PitchDown_Command THEN
+			PitchDown(TRUE);
+		END_IF
+		
+//		IF PressureSwitch_FTRIG.Q THEN
+//			Hold(TRUE);
+//			RollCw_Command := FALSE;
+//			RollCCW_Command := FALSE;
+//			Raise_Command := FALSE;
+//			Lower_Command := FALSE;
+//			PitchUp_Command := FALSE;
+//			PitchDown_Command := FALSE;
+//			PumpContactor := FALSE;
+//		END_IF
+		
+		IF NOT ManualTiltControlEnable THEN
+			Hold(TRUE);
+			PumpContactor := FALSE;
+			State := IDLE;
+		END_IF
+	
+	AUTO:
+		IF StateEntry THEN
+			RollAxisLevel := FALSE;
+			PitchAxisLevel := FALSE;
+			Hold(TRUE);
+		END_IF
+		
+		IF NOT RollAxisLevel AND NOT PitchAxisLevel THEN
+			IF (RollAngle > RollControlThreshold) THEN
+				PumpContactor := TRUE;
+				IF CylinderBumpTimer.Q THEN
+					CylinderBumpTimer.IN := FALSE;
+					IF NOT RollValveLeft.SolenoidRetract AND NOT RollValveRight.SolenoidExtend THEN
+						RollValveLeft.Retract();
+					ELSIF RollValveLeft.SolenoidRetract THEN
+						RollValveLeft.Neutral();
+						RollValveRight.Extend();
+					ELSIF RollValveRight.SolenoidExtend THEN
+						RollValveLeft.Retract();
+						RollValveRight.Neutral();
+					END_IF
+				ELSE
+					CylinderBumpTimer.IN := TRUE;
+				END_IF
+				//RollCCW(TRUE);
+			ELSIF RollAngle < -RollControlThreshold THEN
+				PumpContactor := TRUE;
+				IF CylinderBumpTimer.Q THEN
+					CylinderBumpTimer.IN := FALSE;
+					IF NOT RollValveLeft.SolenoidExtend AND NOT RollValveRight.SolenoidRetract THEN
+						RollValveLeft.Extend();
+					ELSIF RollValveLeft.SolenoidExtend THEN
+						RollValveLeft.Neutral();
+						RollValveRight.Retract();
+					ELSIF RollValveRight.SolenoidRetract THEN
+						RollValveLeft.Extend();
+						RollValveRight.Neutral();
+					END_IF
+				ELSE
+					CylinderBumpTimer.IN := TRUE;
+				END_IF
+				//RollCW(TRUE);
+			ELSIF RollAngle > -RollControlThreshold AND RollAngle < RollControlThreshold THEN
+				RollAxisLevel := TRUE;
+				RollCCW(FALSE);
+				RollCW(FALSE);
+			END_IF
+		ELSIF RollAxisLevel AND NOT PitchAxisLevel THEN
+			IF PitchAngle > PitchControlThreshold THEN
+				PitchDown(TRUE);
+			ELSIF PitchAngle < -PitchControlThreshold THEN
+				PitchUp(TRUE);
+			ELSIF PitchAngle > -PitchControlThreshold AND PitchAngle < PitchControlThreshold THEN
+				PitchAxisLevel := TRUE;
+				PitchDown(FALSE);
+				PitchUp(FALSE);
+			END_IF
+		END_IF
+		
+//		IF PressureSwitch_FTRIG.Q THEN
+//			Hold(TRUE);
+//			PumpStartupTimer.IN := FALSE;
+//		END_IF
+		
+		(*From the slope angle, calculate the required actuator displacement for leveling*)
+		CalcDisplacement(RollAngle);
+		
+		IF NOT AutoTiltControlEnable OR (PitchAxisLevel AND RollAxisLevel) THEN
+			PumpStartupTimer.IN := FALSE;
+			Hold(TRUE);
+			PumpContactor := FALSE;
+			AutoTiltControlEnable := FALSE;
+			State := IDLE;
+		END_IF
+	
+	TEST:
+		IF StateEntry THEN
+			Homed := FALSE;
+			CurrentAxis := 1;
+			PumpContactor := TRUE;
+		END_IF
+		
+		IF StartHoming THEN
+			IF CurrentAxis = 1 THEN
+				RollValveLeft.Extend();
+				IF PressureSwitch_FTRIG.Q THEN
+					RollValveLeft.Neutral();
+					CurrentAxis := 2;
+				END_IF
+			ELSIF CurrentAxis = 2 THEN
+				RollValveRight.Extend();
+				IF PressureSwitch_FTRIG.Q THEN
+					RollValveRight.Neutral();
+					CurrentAxis := 3;
+				END_IF
+			ELSIF CurrentAxis = 3 THEN
+				PitchValve.Extend();
+				IF PressureSwitch_FTRIG.Q THEN
+					PitchValve.Neutral();
+					CurrentAxis := 0;
+				END_IF
+			ELSIF CurrentAxis = 0 THEN
+				Lower(TRUE);
+				IF PressureSwitch_FTRIG.Q THEN
+					Hold(TRUE);
+					Homed := TRUE;
+					StartHoming := FALSE;
+				END_IF
+			END_IF
+		END_IF
+		
+		IF NOT TestModeEnable THEN
+			Hold(TRUE);
+			PumpContactor := FALSE;
+			State := IDLE;
+		END_IF
+		
+	ERROR:
+		IF StateEntry THEN
+			//
+		END_IF
+END_CASE
+
+(*Calculates a moving average of the last 10 data points (20ms) for use in the angle calculation*)
+MovingAverage(IMU_Roll, IMU_Pitch);
+
+(*Read input from the IMU in the roll direction and calculate the slope angle*)
+IF IMU_Roll_Avg > (IMU_Center + IMU_DeadBand) THEN
+	RollAngle := INT_TO_REAL(IMU_Roll_Avg - (IMU_Center + IMU_DeadBand)) / (IMU_Center - IMU_DeadBand) * IMU_MaxAngle;
+ELSIF IMU_Roll_Avg < (IMU_Center - IMU_DeadBand) THEN
+	RollAngle := INT_TO_REAL(IMU_Roll_Avg - (IMU_Center - IMU_DeadBand)) / (IMU_Center - IMU_DeadBand) * IMU_MaxAngle;
+ELSE
+	RollAngle := 0;
+END_IF
+
+IF IMU_Pitch_Avg > (IMU_Center + IMU_DeadBand) THEN
+	PitchAngle := INT_TO_REAL(IMU_Pitch_Avg - (IMU_Center + IMU_DeadBand)) / (IMU_Center - IMU_DeadBand) * IMU_MaxAngle;
+ELSIF IMU_Pitch_Avg < (IMU_Center - IMU_DeadBand) THEN
+	PitchAngle := INT_TO_REAL(IMU_Pitch_Avg - (IMU_Center - IMU_DeadBand)) / (IMU_Center - IMU_DeadBand) * IMU_MaxAngle;
+ELSE
+	PitchAngle := 0;
+END_IF
+
+PressureSwitch_FTRIG();
+StartupTimer();
+PumpStartupTimer();
+CylinderBumpTimer();
+]]></ST>
+    </Implementation>
+    <Method Name="CalcDisplacement" Id="{a527122a-05bb-453b-8992-cdbbbeef2067}">
+      <Declaration><![CDATA[METHOD CalcDisplacement : BOOL
+VAR_INPUT
+	RollAngle	: REAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[TiltDisplacement := ABS((CONFIG.RearTrackWidth) * SIN(DEG_TO_RAD(RollAngle)));
+
+//TiltRightDisplacement := (CONFIG.RearTrackWidth / 2) * SIN(DEG_TO_RAD(SlopeAngle));
+//TiltLeftDisplacement := (-CONFIG.RearTrackWidth / 2) * SIN(DEG_TO_RAD(SlopeAngle));
+
+IF RollAngle < 0 THEN
+	TiltLeftDisplacement := TiltDisplacement;
+	TiltRightDisplacement := 0;
+ELSIF RollAngle > 0 THEN
+	TiltLeftDisplacement := 0;
+	TiltRightDisplacement := TiltDisplacement;
+ELSE
+	TiltLeftDisplacement := 0;
+	TiltRightDisplacement := 0;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CheckValveState" Id="{1b4bfa8e-7418-4c6e-b8d6-772fb388b7d4}">
+      <Declaration><![CDATA[METHOD CheckValveState : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Hold" Id="{b7f78a29-4eaf-4150-9005-54f5bee097ac}">
+      <Declaration><![CDATA[METHOD Hold : BOOL
+VAR_INPUT
+	Run	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF Run THEN
+	RollValveLeft.Neutral();
+	RollValveRight.Neutral();
+	PitchValve.Neutral();
+ELSE
+	//
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Lower" Id="{e7a47199-9537-4db3-86cd-209097777a24}">
+      <Declaration><![CDATA[METHOD Lower : BOOL
+VAR_INPUT
+	Run	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF Run THEN
+	RollValveLeft.Retract();
+	RollValveRight.Retract();
+	PitchValve.Retract();
+ELSE
+	RollValveLeft.Neutral();
+	RollValveRight.Neutral();
+	PitchValve.Neutral();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="MovingAverage" Id="{bab31838-e82a-4d62-a461-86b42f44b8fc}">
+      <Declaration><![CDATA[METHOD MovingAverage : INT
+VAR_INPUT
+	IMU_Roll_Input	: INT;
+	IMU_Pitch_Input	: INT;
+END_VAR
+VAR
+	ArraySumRoll	: DINT := 0;
+	ArraySumPitch	: DINT := 0;
+	i	: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[FOR i := 0 TO 8 DO
+	//ArraySumRoll := ArraySumRoll + RollDataBuffer[i];
+	//ArraySumPitch := ArraySumPitch + PitchDataBuffer[i];
+	RollDataBuffer[i + 1] := RollDataBuffer[i];
+	PitchDataBuffer[i + 1] := PitchdataBuffer[i];
+END_FOR
+
+RollDataBuffer[0] := IMU_Roll_Input;
+PitchDataBuffer[0] := IMU_Pitch_Input;
+
+ArraySumRoll := RollDataBuffer[0] + RollDataBuffer[1] + RollDataBuffer[2] + RollDataBuffer[3] +
+				RollDataBuffer[4] + RollDataBuffer[5] + RollDataBuffer[6] + RollDataBuffer[7] +
+				RollDataBuffer[8] + RollDataBuffer[9];
+				
+ArraySumPitch := PitchDataBuffer[0] + PitchDataBuffer[1] + PitchDataBuffer[2] + PitchDataBuffer[3] +
+				PitchDataBuffer[4] + PitchDataBuffer[5] + PitchDataBuffer[6] + PitchDataBuffer[7] +
+				PitchDataBuffer[8] + PitchDataBuffer[9];
+
+IMU_Roll_Avg := REAL_TO_INT(ArraySumRoll / 10);
+IMU_Pitch_Avg := REAL_TO_INT(ArraySumPitch / 10);
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PitchDown" Id="{f8a83281-7405-4cb2-8771-dc100a23b7fc}">
+      <Declaration><![CDATA[METHOD PitchDown : BOOL
+VAR_INPUT
+	Run	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF Run THEN
+	PitchValve.Retract();
+ELSE
+	PitchValve.Neutral();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="PitchUp" Id="{7e04fe5e-e209-471a-adc2-94c301ce5fa6}">
+      <Declaration><![CDATA[METHOD PitchUp : BOOL
+VAR_INPUT
+	Run	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF Run THEN
+	PitchValve.Extend();
+ELSE
+	PitchValve.Neutral();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Raise" Id="{dffeaf66-4406-4de9-a9da-9a88da85964e}">
+      <Declaration><![CDATA[METHOD Raise : BOOL
+VAR_INPUT
+	Run	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF Run THEN
+	RollValveLeft.Extend();
+	RollValveRight.Extend();
+	PitchValve.Extend();
+ELSE
+	RollValveLeft.Neutral();
+	RollValveRight.Neutral();
+	PitchValve.Neutral();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="RollCCW" Id="{a9e5bc6a-e9fd-461e-a3d2-e9de279853e7}">
+      <Declaration><![CDATA[METHOD RollCCW : BOOL
+VAR_INPUT
+	Run	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF Run THEN
+	RollValveLeft.Retract();
+	RollValveRight.Extend();
+ELSE
+	RollValveLeft.Neutral();
+	RollValveRight.Neutral();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="RollCW" Id="{4cd39384-7f7e-4e82-987e-8ee7f1908100}">
+      <Declaration><![CDATA[METHOD RollCW : BOOL
+VAR_INPUT
+	Run	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF Run THEN
+	RollValveLeft.Extend();
+	RollValveRight.Retract();
+ELSE
+	RollValveLeft.Neutral();
+	RollValveRight.Neutral();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_TILT">
+      <LineId Id="688" Count="1" />
+      <LineId Id="517" Count="5" />
+      <LineId Id="690" Count="1" />
+      <LineId Id="523" Count="3" />
+      <LineId Id="2013" Count="0" />
+      <LineId Id="527" Count="1" />
+      <LineId Id="926" Count="0" />
+      <LineId Id="943" Count="0" />
+      <LineId Id="954" Count="0" />
+      <LineId Id="934" Count="0" />
+      <LineId Id="960" Count="0" />
+      <LineId Id="2136" Count="0" />
+      <LineId Id="530" Count="10" />
+      <LineId Id="1249" Count="1" />
+      <LineId Id="796" Count="1" />
+      <LineId Id="721" Count="1" />
+      <LineId Id="541" Count="1" />
+      <LineId Id="792" Count="0" />
+      <LineId Id="1113" Count="2" />
+      <LineId Id="2014" Count="1" />
+      <LineId Id="1116" Count="1" />
+      <LineId Id="1265" Count="0" />
+      <LineId Id="1118" Count="0" />
+      <LineId Id="1615" Count="1" />
+      <LineId Id="1122" Count="1" />
+      <LineId Id="1617" Count="0" />
+      <LineId Id="1125" Count="7" />
+      <LineId Id="2131" Count="0" />
+      <LineId Id="1133" Count="0" />
+      <LineId Id="1136" Count="0" />
+      <LineId Id="1266" Count="0" />
+      <LineId Id="1241" Count="1" />
+      <LineId Id="1264" Count="0" />
+      <LineId Id="1245" Count="0" />
+      <LineId Id="1243" Count="0" />
+      <LineId Id="2130" Count="0" />
+      <LineId Id="1247" Count="0" />
+      <LineId Id="1244" Count="0" />
+      <LineId Id="795" Count="0" />
+      <LineId Id="1188" Count="0" />
+      <LineId Id="1255" Count="3" />
+      <LineId Id="1191" Count="14" />
+      <LineId Id="1312" Count="0" />
+      <LineId Id="1206" Count="1" />
+      <LineId Id="1313" Count="0" />
+      <LineId Id="1268" Count="1" />
+      <LineId Id="1487" Count="0" />
+      <LineId Id="1277" Count="0" />
+      <LineId Id="1208" Count="1" />
+      <LineId Id="1212" Count="0" />
+      <LineId Id="1279" Count="0" />
+      <LineId Id="1281" Count="3" />
+      <LineId Id="1289" Count="0" />
+      <LineId Id="1280" Count="0" />
+      <LineId Id="1290" Count="0" />
+      <LineId Id="1314" Count="2" />
+      <LineId Id="1213" Count="7" />
+      <LineId Id="1223" Count="2" />
+      <LineId Id="1227" Count="13" />
+      <LineId Id="1189" Count="0" />
+      <LineId Id="1251" Count="0" />
+      <LineId Id="543" Count="1" />
+      <LineId Id="2033" Count="1" />
+      <LineId Id="1259" Count="0" />
+      <LineId Id="546" Count="0" />
+      <LineId Id="564" Count="0" />
+      <LineId Id="2035" Count="0" />
+      <LineId Id="658" Count="0" />
+      <LineId Id="2020" Count="0" />
+      <LineId Id="2138" Count="1" />
+      <LineId Id="2153" Count="0" />
+      <LineId Id="2155" Count="0" />
+      <LineId Id="2147" Count="1" />
+      <LineId Id="2156" Count="0" />
+      <LineId Id="2150" Count="0" />
+      <LineId Id="2152" Count="0" />
+      <LineId Id="2157" Count="0" />
+      <LineId Id="2149" Count="0" />
+      <LineId Id="2142" Count="1" />
+      <LineId Id="2140" Count="0" />
+      <LineId Id="659" Count="0" />
+      <LineId Id="663" Count="0" />
+      <LineId Id="2021" Count="0" />
+      <LineId Id="2159" Count="10" />
+      <LineId Id="2158" Count="0" />
+      <LineId Id="2171" Count="1" />
+      <LineId Id="664" Count="1" />
+      <LineId Id="1939" Count="0" />
+      <LineId Id="666" Count="0" />
+      <LineId Id="1489" Count="0" />
+      <LineId Id="660" Count="0" />
+      <LineId Id="2037" Count="0" />
+      <LineId Id="2039" Count="5" />
+      <LineId Id="2046" Count="0" />
+      <LineId Id="2045" Count="0" />
+      <LineId Id="2038" Count="0" />
+      <LineId Id="2036" Count="0" />
+      <LineId Id="2025" Count="0" />
+      <LineId Id="670" Count="0" />
+      <LineId Id="681" Count="0" />
+      <LineId Id="1395" Count="0" />
+      <LineId Id="672" Count="0" />
+      <LineId Id="1407" Count="0" />
+      <LineId Id="565" Count="3" />
+      <LineId Id="1263" Count="0" />
+      <LineId Id="1262" Count="0" />
+      <LineId Id="669" Count="0" />
+      <LineId Id="2173" Count="0" />
+      <LineId Id="569" Count="2" />
+      <LineId Id="695" Count="0" />
+      <LineId Id="1075" Count="35" />
+      <LineId Id="1253" Count="0" />
+      <LineId Id="1111" Count="1" />
+      <LineId Id="699" Count="0" />
+      <LineId Id="1688" Count="0" />
+      <LineId Id="694" Count="0" />
+      <LineId Id="573" Count="3" />
+      <LineId Id="1938" Count="0" />
+      <LineId Id="1853" Count="0" />
+      <LineId Id="641" Count="0" />
+      <LineId Id="1855" Count="0" />
+      <LineId Id="642" Count="14" />
+      <LineId Id="640" Count="0" />
+      <LineId Id="693" Count="0" />
+      <LineId Id="692" Count="0" />
+      <LineId Id="577" Count="0" />
+      <LineId Id="959" Count="0" />
+      <LineId Id="2141" Count="0" />
+      <LineId Id="200" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TILT.CalcDisplacement">
+      <LineId Id="22" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="14" Count="6" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TILT.CheckValveState">
+      <LineId Id="32" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TILT.Hold">
+      <LineId Id="12" Count="0" />
+      <LineId Id="5" Count="2" />
+      <LineId Id="13" Count="2" />
+    </LineIds>
+    <LineIds Name="FB_TILT.Lower">
+      <LineId Id="14" Count="0" />
+      <LineId Id="7" Count="2" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="18" Count="1" />
+      <LineId Id="16" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_TILT.MovingAverage">
+      <LineId Id="5" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="32" Count="2" />
+      <LineId Id="36" Count="1" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="14" Count="0" />
+      <LineId Id="13" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TILT.PitchDown">
+      <LineId Id="13" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="14" Count="2" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TILT.PitchUp">
+      <LineId Id="12" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="13" Count="2" />
+    </LineIds>
+    <LineIds Name="FB_TILT.Raise">
+      <LineId Id="18" Count="0" />
+      <LineId Id="12" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="22" Count="1" />
+      <LineId Id="20" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_TILT.RollCCW">
+      <LineId Id="15" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="19" Count="1" />
+      <LineId Id="18" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_TILT.RollCW">
+      <LineId Id="12" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="18" Count="1" />
+      <LineId Id="15" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

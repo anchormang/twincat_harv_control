@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <POU Name="MAIN" Id="{3586711d-1897-42d6-afda-493964a09e79}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	Error			: BOOL;
+	SystemReboot	: NT_REBOOT;
+	Reboot			: BOOL;
+	MsgUpdateTimer	: TON;
+	MsgUpdatePeriod	: TIME := T#50MS;
+	TimerResetDelay	: INT := 25;
+	TimerResetCounter	: INT;
+	Version			: REAL := 1.0;
+	
+	State			: (DEFAULT, INIT, IDLE, RUN, ERROR);
+	PrevState		: (DEFAULT, INIT, IDLE, RUN, ERROR);
+	StateEntry 		: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[Harv.ReadHw();
+
+MsgUpdateTimer.PT := MsgUpdatePeriod;
+
+IF PrevState <> State THEN
+	StateEntry := TRUE;
+	PrevState := State;
+ELSE
+	StateEntry := FALSE;
+END_IF
+
+CASE State OF
+	DEFAULT:
+		//
+	INIT:
+		//
+	IDLE:
+		//
+	RUN:
+		//
+	ERROR:
+		//
+END_CASE
+
+//IF Error THEN
+//	HARV.ErrorLog.AddMsg(TimeStamp := Harv.TimeTracker.TimeStamp, Location := 'MAIN', ErrorCode := 1234, Description := 'TEST');
+//	Error := FALSE;
+//END_IF
+
+IF MsgUpdateTimer.Q THEN
+	TimerResetCounter := TimerResetCounter + 1;
+	IF TimerResetCounter = TimerResetDelay THEN
+		TimerResetCounter := 0;
+		MsgUpdateTimer.IN := FALSE;
+	END_IF
+ELSE
+	TimerResetCounter := 0;
+	MsgUpdateTimer.IN := TRUE;
+END_IF
+
+SystemReboot(NETID := '', START := Reboot);
+
+MsgUpdateTimer();
+Harv.TimeTracker();
+Harv.DriveSys();
+Harv.TiltControl();
+Harv.WriteHw();]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="34" Count="0" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="138" Count="0" />
+      <LineId Id="137" Count="0" />
+      <LineId Id="139" Count="0" />
+      <LineId Id="143" Count="0" />
+      <LineId Id="141" Count="1" />
+      <LineId Id="140" Count="0" />
+      <LineId Id="145" Count="0" />
+      <LineId Id="144" Count="0" />
+      <LineId Id="146" Count="0" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="153" Count="0" />
+      <LineId Id="149" Count="0" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="150" Count="0" />
+      <LineId Id="155" Count="0" />
+      <LineId Id="151" Count="0" />
+      <LineId Id="156" Count="0" />
+      <LineId Id="147" Count="0" />
+      <LineId Id="62" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="64" Count="1" />
+      <LineId Id="83" Count="1" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="85" Count="1" />
+      <LineId Id="68" Count="0" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="70" Count="1" />
+      <LineId Id="63" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="36" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

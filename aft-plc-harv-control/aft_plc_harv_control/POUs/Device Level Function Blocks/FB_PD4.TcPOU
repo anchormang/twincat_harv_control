@@ -1,0 +1,223 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_PD4" Id="{e09cee4c-9330-4994-9354-d4a609a75133}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_PD4
+VAR_INPUT
+	PD4_IN 			: ST_PD4_IN;
+	Enable 			: BOOL;
+	ErrorReset 		: BOOL;
+	TargetVelocity 	: INT;
+	TargetPosition	: DINT;			// Check variable type
+	Self 			: INT;
+END_VAR
+VAR_OUTPUT
+	PD4_OUT : ST_PD4_OUT;
+	Ready 	: BOOL;
+	Error	: BOOL;
+END_VAR
+VAR
+//	State 		: DINT;
+	State		: (DEFAULT, INIT, SWITCH_ON_DISABLED, READY_TO_SWITCH_ON, SWITCHED_ON, OPERATION_ENABLED, ERROR);
+	PrevState 	: (DEFAULT, INIT, SWITCH_ON_DISABLED, READY_TO_SWITCH_ON, SWITCHED_ON, OPERATION_ENABLED, ERROR);
+	StateEntry 	: BOOL;
+	Homed		: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// POWER FSM State Machine for EtherCAT PD4 Control
+
+IF State <> PrevState THEN
+	StateEntry := TRUE;
+	PrevState := State;
+ELSE
+	StateEntry := FALSE;
+END_IF
+
+CASE State OF
+	DEFAULT:
+		State := INIT;
+		
+	INIT:
+		Ready := FALSE;
+		PD4_OUT.ControlWord := PD4ControlWord.PulseInhibit;
+		PD4_OUT.Polarity := PD4Polarity.Positive;
+		
+		PD4_OUT.OperationMode := PD4OperationMode.HomingMode;
+		PD4_OUT.HomingMethod := 35;									// Zero at current position
+		PD4_OUT.ControlWord := PD4ControlWord.StartHoming;
+		
+		IF PD4_IN.ActualPosition = 0 THEN
+			SetMode(PD4OperationMode.ProfilePositionMode);
+			SetAbsoluteMotion();
+//			SetMode(PD4OperationMode.VelocityMode);
+			State := SWITCH_ON_DISABLED;
+		END_IF
+
+	SWITCH_ON_DISABLED:
+		IF StateEntry THEN
+			PD4_OUT.ControlWord := PD4ControlWord.PulseInhibit;
+			PD4_OUT.TargetVelocity := 0;
+		END_IF
+		
+		IF ((PD4_IN.StatusWord AND PD4StatusWord.SwitchOnDisabled) = PD4StatusWord.SwitchOnDisabled) THEN
+			PD4_OUT.ControlWord := PD4ControlWord.Shutdown;
+			State := READY_TO_SWITCH_ON;
+		END_IF
+		
+	READY_TO_SWITCH_ON:
+		IF ((PD4_IN.StatusWord AND PD4StatusWOrd.ReadyToSwitchOn) = PD4StatusWOrd.ReadyToSwitchOn) THEN
+			PD4_OUT.ControlWord := PD4ControlWord.SwitchOn;
+			State := SWITCHED_ON;
+		END_IF
+		
+	SWITCHED_ON:
+		IF StateEntry THEN
+			Ready := TRUE;
+		END_IF
+		
+		IF (((PD4_IN.StatusWord AND PD4StatusWOrd.SwitchedOn) = PD4StatusWOrd.SwitchedOn) AND Enable) THEN
+			PD4_OUT.TargetPosition := PD4_IN.ActualPosition;
+			PD4_OUT.ControlWord := PD4ControlWord.EnableOperation;
+			State := OPERATION_ENABLED;
+		END_IF
+		
+	OPERATION_ENABLED:
+		IF StateEntry THEN
+			PD4_OUT.TargetPosition := PD4_IN.ActualPosition;
+			TargetPosition := PD4_IN.ActualPosition;
+		END_IF
+		
+		PD4_OUT.TargetPosition := TargetPosition;
+		ToggleMoveBit();
+//		PD4_OUT.TargetVelocity := TargetVelocity;	
+		
+		IF NOT Enable THEN
+//			PD4_OUT.TargetVelocity := 0;
+			PD4_OUT.TargetPosition := PD4_IN.ActualPosition;
+			PD4_OUT.ControlWord := PD4ControlWord.DisableOperation;
+			State := SWITCHED_ON;
+		END_IF
+		
+	ERROR:
+		IF StateEntry THEN
+			Ready := FALSE;
+			Error := TRUE;	
+		END_IF
+		
+		IF ErrorReset THEN
+			PD4_OUT.ControlWord := PD4ControlWord.FaultReset;
+			IF ((PD4_IN.StatusWord AND PD4StatusWOrd.Fault) = 0) THEN
+				Error := FALSE;
+				State := SWITCH_ON_DISABLED;
+			END_IF
+		END_IF
+END_CASE
+
+IF ((PD4_IN.StatusWord AND PD4StatusWord.Fault) = PD4StatusWord.Fault) THEN
+	State := ERROR;
+END_IF]]></ST>
+    </Implementation>
+    <Method Name="SetAbsoluteMotion" Id="{b00f98ed-136b-4e21-9922-598b4502a478}">
+      <Declaration><![CDATA[METHOD SetAbsoluteMotion : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[PD4_OUT.ControlWord := PD4_OUT.ControlWord OR PD4ControlWord.AbsoluteMotion;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetMaxCurrent" Id="{d71f4290-7d0f-46e0-b5da-4ed562328b8c}">
+      <Declaration><![CDATA[METHOD SetMaxCurrent : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetMode" Id="{dc242788-6c1e-42b7-8aef-54f3132ad46b}">
+      <Declaration><![CDATA[METHOD SetMode : BOOL
+VAR_INPUT
+	OperationMode	: PD4OperationMode;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[PD4_OUT.OperationMode := OperationMode;
+PD4_OUT.SubmodeSelect := 1;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetMotionProfile" Id="{22327d2a-0c20-4efc-a559-247f210439c1}">
+      <Declaration><![CDATA[METHOD SetMotionProfile : BOOL
+VAR_INPUT
+	Velocity 	: UDINT;
+	Accel 		: UDINT;
+	Decel 		: UDINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[PD4_OUT.ProfileVelocity := Velocity;
+PD4_OUT.Accel := Accel;
+PD4_OUT.Decel := Decel;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ToggleMoveBit" Id="{778237c8-e827-42a5-bdd7-6ccd9a52a9fb}">
+      <Declaration><![CDATA[METHOD ToggleMoveBit : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (PD4_OUT.ControlWord AND PD4ControlWord.StartMove) = PD4ControlWord.StartMove THEN
+	PD4_OUT.ControlWord := (PD4_OUT.ControlWord AND (NOT PD4ControlWord.StartMove));
+ELSE
+	PD4_OUT.ControlWord := (PD4_OUT.ControlWord OR PD4ControlWord.StartMove);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_PD4">
+      <LineId Id="29" Count="9" />
+      <LineId Id="122" Count="2" />
+      <LineId Id="55" Count="8" />
+      <LineId Id="165" Count="2" />
+      <LineId Id="162" Count="0" />
+      <LineId Id="65" Count="25" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="91" Count="4" />
+      <LineId Id="150" Count="0" />
+      <LineId Id="153" Count="0" />
+      <LineId Id="163" Count="0" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="157" Count="1" />
+      <LineId Id="168" Count="0" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="154" Count="0" />
+      <LineId Id="96" Count="1" />
+      <LineId Id="126" Count="0" />
+      <LineId Id="98" Count="1" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="110" Count="11" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="103" Count="3" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PD4.SetAbsoluteMotion">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PD4.SetMaxCurrent">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PD4.SetMode">
+      <LineId Id="7" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PD4.SetMotionProfile">
+      <LineId Id="8" Count="1" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_PD4.ToggleMoveBit">
+      <LineId Id="5" Count="1" />
+      <LineId Id="8" Count="1" />
+      <LineId Id="7" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

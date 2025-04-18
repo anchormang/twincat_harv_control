@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="FrameSelect" Id="{dfc84ab1-b5fe-483b-8db2-58e5c3a7e2b0}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE FrameSelect :
+(
+	Status	:= 1,
+	Warning := 2,
+	Error	:= 3
+)INT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

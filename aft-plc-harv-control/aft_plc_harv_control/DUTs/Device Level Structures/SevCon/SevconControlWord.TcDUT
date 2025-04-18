@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="SevconControlWord" Id="{9b9bf9d0-175e-4c92-a9fb-c459adb87f49}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE SevconControlWord :
+(
+	Shutdown			:= 2#00000110,
+	SwitchOn			:= 2#00000111,
+	DisableVoltage		:= 2#00000000,
+	QuickStop			:= 2#00000010,
+	DisableOperation	:= 2#00000111,
+	EnableOperation		:= 2#00001111,
+	FaultReset			:= 2#00010000
+)BYTE;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

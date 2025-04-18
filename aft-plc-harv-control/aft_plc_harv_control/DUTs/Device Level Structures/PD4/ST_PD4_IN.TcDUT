@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_PD4_IN" Id="{4c260079-ef01-04b6-3d85-86656c8cbdf1}">
+    <Declaration><![CDATA[TYPE ST_PD4_IN :
+STRUCT
+	StatusWord 				: UINT;
+	ActualPosition 			: DINT;
+	ActualVelocity 			: REAL;
+	OperationModeDisplay 	: SINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

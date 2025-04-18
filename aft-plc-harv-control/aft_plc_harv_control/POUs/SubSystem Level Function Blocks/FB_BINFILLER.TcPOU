@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_BINFILLER" Id="{3099f396-b86b-4ba4-9528-44ca38af8d5b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_BINFILLER
+VAR_INPUT
+	UpLeftConveyor_IN		: ST_PD6_IN;
+	UpRightConveyor_IN		: ST_PD6_IN;
+	DownLeftConveyor_IN		: ST_PD6_IN;
+	DownRightConveyor_IN	: ST_PD6_IN;
+	Rotary_IN				: ST_PD6_IN;
+	AugerLeft_IN			: ST_PD6_IN;
+	AugerRight_IN			: ST_PD6_IN;
+	Enable	: BOOL;
+END_VAR
+VAR_OUTPUT
+	UpLeftConveyor		: FB_PD6;
+	UpRightConveyor		: FB_PD6;
+	DownLeftConveyor	: FB_PD6;
+	DownRightConveyor	: FB_PD6;
+	Rotary				: FB_PD6;
+	AugerLeft			: FB_PD6;
+	AugerRight			: FB_PD6;
+END_VAR
+VAR
+	State		: (DEFAULT, INIT, IDLE, MANUAL, AUTO, ERROR);
+	PrevState	: (DEFAULT, INIT, IDLE, MANUAL, AUTO, ERROR);
+	StateEntry 	: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+IF State <> PrevState THEN
+	StateEntry := TRUE;
+	PrevState := State;
+ELSE
+	StateEntry := FALSE;
+END_IF
+
+CASE State OF
+	DEFAULT:
+		//
+	INIT:
+		//
+	IDLE:
+		//
+	MANUAL:
+		//
+	AUTO:
+		//
+	ERROR:
+		//
+END_CASE
+
+UpLeftConveyor(PD6_IN := UpLeftConveyor_IN);
+UpRightConveyor(PD6_IN := UpRightConveyor_IN);
+DownLeftConveyor(PD6_IN := DownLeftConveyor_IN);
+DownRightConveyor(PD6_IN := DownRightConveyor_IN);
+Rotary(PD6_IN := Rotary_IN);
+AugerLeft(PD6_IN := AugerLeft_IN);
+AugerRight(PD6_IN := AugerRight_IN);]]></ST>
+    </Implementation>
+    <LineIds Name="FB_BINFILLER">
+      <LineId Id="35" Count="1" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="39" Count="2" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="47" Count="0" />
+      <LineId Id="53" Count="0" />
+      <LineId Id="48" Count="0" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="50" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="59" Count="5" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

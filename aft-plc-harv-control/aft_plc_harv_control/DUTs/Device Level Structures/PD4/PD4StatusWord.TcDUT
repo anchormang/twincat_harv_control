@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="PD4StatusWord" Id="{99c41c3d-615d-0bfb-24d0-ecdb66501764}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE PD4StatusWord :
+(
+	NotReadyToSwitchOn := 0,	// x0xx 0000
+	SwitchOnDisabled := 64,		// x1xx 0000
+	ReadyToSwitchOn := 33,		// 1000 0010 0011 0001 (0x8231)
+	SwitchedOn := 35,			// 1000 0010 0011 0011 (0x8233)
+	OperationEnabled := 39,		// x01x 0111
+	QuickStopActive := 7,		// x00x 0111
+	Fault := 8,					// x0xx 1000
+	TargetReached := 1024,		// 0000 0100 0000 0000 (bit 10)
+	HomingComplete := 5120,		// 0001 0100 0000 0000 (bit 10 and 12)
+	TargetPositionAccepted := 4096		
+)UINT;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

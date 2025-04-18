@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="HARV" Id="{d1b321f6-5391-468f-b173-446a75ed00cc}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL
+	(*Log Level Function Blocks*)
+	ErrorLog	: FB_ERROR_MSG_LOG;
+	DriveLog	: FB_DRIVE_MSG_LOG;
+	TimeTracker	: FB_TIMETRACKER;
+	
+	(*SubSystem Level Function Blocks*)
+	DriveSys	: FB_DRIVE;
+	TiltControl	: FB_TILT;
+	BinFiller	: FB_BINFILLER;
+	BinManager	: FB_BIN_MANAGER;
+	Conveyance	: FB_CONVEYANCE;
+	
+	(*Device Level Function Blocks*)
+	ReadHw		: FB_READ_HW;
+	WriteHw		: FB_WRITE_HW;
+	
+	(*System Level Function Blocks*)
+	SystemReboot	: NT_REBOOT;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

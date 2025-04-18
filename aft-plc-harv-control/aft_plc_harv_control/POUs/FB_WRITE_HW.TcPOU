@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_WRITE_HW" Id="{e8f023ec-25c2-490e-995b-fdcb6688f0c1}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_WRITE_HW
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*WRITE HARDWARE FUCNTION BLOCK
+
+	Writes all program variables in the PLC to their relevant
+	hardware devices on the EtherCAT network.  This will happen
+	every PLC scan.*)
+
+(*Left Drive Motor - SEVCON*)
+MOTORS.DriveLeft.ControlWord		:= HARV.DriveSys.DriveLeft.SEVCON_OUT.ControlWord;
+MOTORS.DriveLeft.TargetVelocity		:= HARV.DriveSys.DriveLeft.SEVCON_OUT.TargetVelocity;
+MOTORS.DriveLeft.BrakeOutput		:= HARV.DriveSys.DriveLeft.SEVCON_OUT.BrakeOutput;
+MOTORS.DriveLeft.ContactorOutput	:= HARV.DriveSys.DriveLeft.SEVCON_OUT.ContactorOutput;
+
+(*Right Drive Motor - SEVCON*)
+MOTORS.DriveRight.ControlWord		:= HARV.DriveSys.DriveRight.SEVCON_OUT.ControlWord;
+MOTORS.DriveRight.TargetVelocity	:= HARV.DriveSys.DriveRight.SEVCON_OUT.TargetVelocity;
+MOTORS.DriveRight.BrakeOutput		:= HARV.DriveSys.DriveRight.SEVCON_OUT.BrakeOutput;
+MOTORS.DriveRight.BrakeOutput		:= HARV.DriveSys.DriveRight.SEVCON_OUT.ContactorOutput;
+
+(*Left Steering Motor - PD6*)
+MOTORS.SteerLeft.ControlWord		:= HARV.DriveSys.SteerLeft.PD4_OUT.ControlWord;
+MOTORS.SteerLeft.OperationMode		:= HARV.DriveSys.SteerLeft.PD4_OUT.OperationMode;
+MOTORS.SteerLeft.SubmodeSelect		:= HARV.DriveSys.SteerLeft.PD4_OUT.SubmodeSelect;
+MOTORS.SteerLeft.HomingMethod		:= HARV.DriveSys.SteerLeft.PD4_OUT.HomingMethod;
+MOTORS.SteerLeft.Polarity			:= HARV.DriveSys.SteerLeft.PD4_OUT.Polarity;
+MOTORS.SteerLeft.TargetVelocity		:= HARV.DriveSys.SteerLeft.PD4_OUT.TargetVelocity;
+MOTORS.SteerLeft.ProfileVelocity	:= HARV.DriveSys.SteerLeft.PD4_OUT.ProfileVelocity;
+MOTORS.SteerLeft.TargetPosition		:= HARV.DriveSys.SteerLeft.PD4_OUT.TargetPosition;
+MOTORS.SteerLeft.Accel				:= HARV.DriveSys.SteerLeft.PD4_OUT.Accel;
+MOTORS.SteerLeft.Decel				:= HARV.DriveSys.SteerLeft.PD4_OUT.Decel;
+
+(*Right Steering Motor - PD6*)
+MOTORS.SteerRight.ControlWord		:= HARV.DriveSys.SteerRight.PD4_OUT.ControlWord;
+MOTORS.SteerRight.OperationMode		:= HARV.DriveSys.SteerRight.PD4_OUT.OperationMode;
+MOTORS.SteerRight.SubmodeSelect		:= HARV.DriveSys.SteerRight.PD4_OUT.SubmodeSelect;
+MOTORS.SteerRight.HomingMethod		:= HARV.DriveSys.SteerRight.PD4_OUT.HomingMethod;
+MOTORS.SteerRight.Polarity			:= HARV.DriveSys.SteerRight.PD4_OUT.Polarity;
+MOTORS.SteerRight.TargetVelocity	:= HARV.DriveSys.SteerRight.PD4_OUT.TargetVelocity;
+MOTORS.SteerRight.ProfileVelocity	:= HARV.DriveSys.SteerRight.PD4_OUT.ProfileVelocity;
+MOTORS.SteerRight.TargetPosition	:= HARV.DriveSys.SteerRight.PD4_OUT.TargetPosition;
+MOTORS.SteerRight.Accel				:= HARV.DriveSys.SteerRight.PD4_OUT.Accel;
+MOTORS.SteerRight.Decel				:= HARV.DriveSys.SteerRight.PD4_OUT.Decel;
+
+(*Left Conveyance Motor*)
+
+(*Right Conveyance Motor*)
+
+(*Digital Outputs EL2008*)
+IO.DO_SLICE_0[0] := HARV.TiltControl.RollValveLeft.SolenoidExtend;
+IO.DO_SLICE_0[1] := HARV.TiltControl.RollValveLeft.SolenoidRetract;
+IO.DO_SLICE_0[2] := HARV.TiltControl.RollValveRight.SolenoidExtend;
+IO.DO_SLICE_0[3] := HARV.TiltControl.RollValveRight.SolenoidRetract;
+IO.DO_SLICE_0[4] := HARV.TiltControl.PitchValve.SolenoidExtend;
+IO.DO_SLICE_0[5] := HARV.TiltControl.PitchValve.SolenoidRetract;
+IO.DO_SLICE_0[6] := HARV.TiltControl.PumpContactor;]]></ST>
+    </Implementation>
+    <LineIds Name="FB_WRITE_HW">
+      <LineId Id="34" Count="1" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="40" Count="1" />
+      <LineId Id="18" Count="1" />
+      <LineId Id="90" Count="0" />
+      <LineId Id="95" Count="0" />
+      <LineId Id="128" Count="1" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="99" Count="0" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="139" Count="0" />
+      <LineId Id="141" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="45" Count="6" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="55" Count="8" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="115" Count="5" />
+      <LineId Id="149" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

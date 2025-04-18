@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_PD4_OUT" Id="{bba3326a-2ae2-02df-0b26-a7602e548afc}">
+    <Declaration><![CDATA[TYPE ST_PD4_OUT :
+STRUCT
+	ControlWord 	: UINT;
+	HomingMethod 	: USINT;
+	TargetVelocity 	: INT;		// target velocity while in profile velocity mode
+	ProfileVelocity : UDINT;	// target velocity while in profile position mode
+	Accel 			: UDINT;
+	Decel 			: UDINT;
+	TargetPosition	: DINT;
+	SubmodeSelect 	: UDINT;
+	OperationMode 	: SINT;
+	Polarity		: USINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

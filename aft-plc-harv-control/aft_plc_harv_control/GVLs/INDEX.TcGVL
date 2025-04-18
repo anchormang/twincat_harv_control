@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="INDEX" Id="{037f2027-18db-40ad-a280-bf4232deeeb6}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL
+	(*SEVCON Indexes that will likely be used by the SDO Read/Write function blocks*)
+	SpeedControlGains	: DWORD := 16#4651;
+	PasswordEntry		: DWORD := 16#5000;
+	PasswordKey			: DWORD := 16#5001;	
+	NmtState			: DWORD := 16#5110;
+	PreChargeActivate	: DWORD := 16#5180;
+	FinalPreChargeLevel	: DWORD := 16#5820;
+	MinPreChargeLevel	: DWORD := 16#5821;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

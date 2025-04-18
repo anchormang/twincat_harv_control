@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_DRIVE_MSG_LOG" Id="{273aa02f-b17c-4960-9963-8a7c0add0e7b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DRIVE_MSG_LOG
+VAR
+	Buffer	: ARRAY[0..MaxBufferSize] OF ST_DRIVE_MSG;
+	Index : INT;
+END_VAR
+VAR CONSTANT
+	MaxBufferSize	: INT := 1000;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="AddMsg" Id="{4c6b5223-b671-431a-885e-811c84482326}">
+      <Declaration><![CDATA[METHOD AddMsg : BOOL
+VAR_INPUT
+	TimeStamp			: DT;
+	LeftVelocity		: INT;
+	RightVelocity		: INT;
+	LeftSteeringAngle	: LREAL;
+	RightSteeringAngle	: LREAL;
+	LeftCurrent			: REAL;
+	RightCurrent		: REAL;
+	LeftStatusCode		: UINT;
+	RightStatusCode		: UINT;
+END_VAR
+VAR
+	i: INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[FOR i := 0 TO MaxBufferSize DO
+	IF Buffer[MaxBufferSize - i].LeftVelocity = 0.0 THEN
+		CONTINUE;
+	ELSE
+		Buffer[MaxBufferSize - i + 1].TimeStamp 			:= Buffer[MaxBufferSize - i].TimeStamp;
+		Buffer[MaxBufferSize - i + 1].LeftVelocity 			:= Buffer[MaxBufferSize - i].LeftVelocity;
+		Buffer[MaxBufferSize - i + 1].RightVelocity 		:= Buffer[MaxBufferSize - i].RightVelocity;
+		Buffer[MaxBufferSize - i + 1].LeftSteeringAngle 	:= Buffer[MaxBufferSize - i].LeftSteeringAngle;
+		Buffer[MaxBufferSize - i + 1].RightSteeringAngle 	:= Buffer[MaxBufferSize - i].RightSteeringAngle;
+		Buffer[MaxBufferSize - i + 1].LeftCurrent 			:= Buffer[MaxBufferSize - i].LeftCurrent;
+		Buffer[MaxBufferSize - i + 1].RightCurrent 			:= Buffer[MaxBufferSize - i].RightCurrent;
+		Buffer[MaxBufferSize - i + 1].LeftStatusCode 		:= Buffer[MaxBufferSize - i].LeftStatusCode;
+		Buffer[MaxBufferSize - i + 1].RightStatusCode 		:= Buffer[MaxBufferSize - i].RightStatusCode;
+	END_IF
+END_FOR
+
+Buffer[0].Timestamp 			:= TimeStamp;
+Buffer[0].LeftVelocity 			:= LeftVelocity;
+Buffer[0].RightVelocity 		:= RightVelocity;
+Buffer[0].LeftSteeringAngle 	:= LeftSteeringAngle;
+Buffer[0].RightSteeringAngle 	:= RightSteeringAngle;
+Buffer[0].LeftCurrent 			:= LeftCurrent;
+Buffer[0].RightCurrent 			:= RightCurrent;
+Buffer[0].LeftStatusCode 		:= LeftStatusCode;
+Buffer[0].RightStatusCode 		:= RightStatusCode;
+
+Index := Index + 1;]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_DRIVE_MSG_LOG">
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DRIVE_MSG_LOG.AddMsg">
+      <LineId Id="6" Count="5" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="55" Count="1" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="14" Count="1" />
+      <LineId Id="17" Count="1" />
+      <LineId Id="35" Count="1" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="57" Count="0" />
+      <LineId Id="37" Count="3" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

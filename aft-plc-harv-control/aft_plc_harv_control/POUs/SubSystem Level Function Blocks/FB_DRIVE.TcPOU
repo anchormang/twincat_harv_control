@@ -1,0 +1,539 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <POU Name="FB_DRIVE" Id="{2739fda1-7412-453c-a139-fe219d95ee1a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DRIVE
+VAR_INPUT
+	DriveLeftIN			: ST_SEVCON_IN;
+	DriveRightIN		: ST_SEVCON_IN;
+//	SteerLeftIN			: ST_PD6_IN;
+//	SteerRightIN		: ST_PD6_IN;
+	SteerLeftIN			: ST_PD4_IN;
+	SteerRightIN		: ST_PD4_IN;
+	
+	JoyStick_X			: INT;
+	JoyStick_Y			: INT;
+	JoyStick_Button		: INT;
+	ManualDriveEnable	: BOOL;			// Dead man switch on joystick controls
+	AutoDriveEnable		: BOOL;			// Likely controlled by python
+	ErrorReset			: BOOL;
+	
+	AutoDriveSpeedCommand	: DINT := 50;
+	JohnButtonInput		: BOOL;
+END_VAR
+VAR_OUTPUT
+	DriveLeft	: FB_SEVCON;
+	DriveRight	: FB_SEVCON;
+//	SteerLeft	: FB_PD6;
+//	SteerRight	: FB_PD6;
+	SteerLeft	: FB_PD4;
+	SteerRight	: FB_PD4;
+	
+	(*Outputs for unit testing*)
+	SteerLeftAngleTest	: LREAL;
+	SteerRightAngleTest	: LREAL;
+
+	Error		: BOOL;
+	ErrorCode	: INT;
+	Ready		: BOOL;
+END_VAR
+VAR
+	State		: (DEFAULT, INIT, IDLE, MANUAL, AUTO, ERROR);
+	PrevState	: (DEFAULT, INIT, IDLE, MANUAL, AUTO, ERROR);
+	StateEntry 	: BOOL;
+	TimeInState	: TIME;
+	
+	LeftVelCommand	: LREAL;
+	LeftVelActual	: LREAL;
+	LeftPosActual	: DINT;
+	RightVelCommand	: LREAL;
+	RightVelActual	: LREAL;
+	RightPosActual	: DINT;
+	DriveVelInput	: LREAL;
+				// Check variable type here, will be in acres / hour
+	AutoDriveSpeedActual	: DINT := 45;			// in Acres/hour
+	
+	SteeringAngleInput		: LREAL;		// unit should be degrees, max range is +/- 89 degrees
+	ICC_R					: LREAL;		// instantaneous radius of curvature calculated from steering angle
+	LeftWheelAngleCommand	: LREAL;
+	LeftWheelAngleActual	: LREAL;
+	RightWheelAngleCommand	: LREAL;
+	RightWheelAngleActual	: LREAL;
+	
+	DriveMsgUpdateTimer		: TON;
+	DriveMsgUpdatePeriod	: TIME := T#5S;
+END_VAR
+VAR CONSTANT
+	MaxDriveSpeed			: REAL := 1000;		// mm/s
+	MaxSteeringAngle		: REAL := 75.0;		// degrees
+	JoyStickMaxVal			: INT := 16300;	// raw analog value at extreme
+	JoyStickCenter			: INT := 8150;
+	DeadBand_X				: INT := 150;		// ~10% or +/- 1V
+	DeadBand_Y				: INT := 150;		// ~10% or +/- 1V
+	DriveWheelDiameter		: REAL := 762;		// in mm = 30 inches
+	DriveWheelEncoderRes	: DINT := 1000;		// was 4000
+	DriveWheelGearRatio		: INT := 1;
+	SteeringWheelDiameter	: REAL := 660.4;	// in mm = 26 inches
+	SteeringEncoderRes		: DINT := 4000;
+	SteeringGearRatio		: INT := 14;
+	SteeringVel				: UDINT := 500;
+	SteeringAcc				: UDINT := 1000;
+	SteeringDec				: UDINT := 1000;
+	DriveAcc				: UDINT := 1000;
+	DriveDec				: UDINT := 10000;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*DRIVE SYSTEM CONTROL FUNCTION BLOCK
+INPUTS:
+	- Joystick values in X and Y direction in Manual Drive Mode
+	- Deadman switch input for manual mode activation and safety
+	- Drive Velocity and Steering Angle from Python in Auto Drive Mode
+	- Device status from Sevcons, PD6s and other motion devices
+
+OUTPUTS:
+	- Target Velocity commands to SEVCONs for drive speed control
+	- Target Position commands to PD6/4s for steering angle control
+	- Device status info and function block state*)
+
+IF State <> PrevState THEN
+	StateEntry := TRUE;
+	PrevState := State;
+ELSE
+	StateEntry := FALSE;
+END_IF
+
+CASE State OF
+	DEFAULT:
+		IF StateEntry THEN
+			TimeInState := T#0MS;
+		END_IF
+		
+		State := INIT;
+		
+	INIT:
+		IF StateEntry THEN
+			DriveMsgUpdateTimer.PT := DriveMsgUpdatePeriod;
+			TimeInState := T#0MS;
+		END_IF
+		
+		SteerLeft.SetMotionProfile(SteeringVel, SteeringAcc, SteeringDec);
+		SteerRight.SetMotionProfile(SteeringVel, SteeringAcc, SteeringDec);
+		
+		DriveRight.Self := 1;
+		DriveLeft.Self := 2;
+		
+		IF (DriveLeft.Ready) THEN
+			Ready := TRUE;
+			State := IDLE;
+		END_IF
+		
+//		IF (SteerLeft.Ready AND SteerRight.Ready AND DriveLeft.Ready AND DriveRight.Ready) THEN
+//			Ready := TRUE;
+//			State := IDLE;
+//		END_IF
+		
+	IDLE:
+		IF StateEntry THEN
+			TimeInState := T#0MS;
+		END_IF
+		
+		ReadButton();
+		
+		IF ManualDriveEnable AND Ready THEN
+			State := MANUAL;
+		ELSIF AutoDriveEnable AND Ready THEN
+			State := AUTO;
+		END_IF
+
+	MANUAL:
+		IF StateEntry THEN
+			TimeInState := T#0MS;
+			DriveLeft.Enable := TRUE;
+			// DriveRight.Enable := TRUE;
+			SteerLeft.Enable := TRUE;
+			SteerRight.Enable := TRUE;
+		END_IF
+		
+		(*Reads joystick in X direction, scales for steering angle and implements deadband limits*)
+		IF (JoyStick_X > (JoyStickCenter + DeadBand_X)) THEN
+			SteeringAngleInput := (INT_TO_REAL(JoyStick_X - (JoyStickCenter + DeadBand_X)) / (JoyStickCenter - DeadBand_X)) * MaxSteeringAngle;
+		ELSIF (JoyStick_X < (JoyStickCenter - DeadBand_X)) THEN
+			SteeringAngleInput := (INT_TO_REAL(JoyStick_X -(JoyStickCenter - DeadBand_X)) / (JoyStickCenter - DeadBand_X)) * MaxSteeringAngle;
+		ELSE
+			SteeringAngleInput := 0;
+		END_IF
+		
+		(*Reads joystick in Y direction, scales for drive speed and implements deadband limits*)
+		IF (JoyStick_Y > (JoyStickCenter + DeadBand_Y)) THEN
+			DriveVelInput := (INT_TO_REAL(JoyStick_Y - (JoyStickCenter + DeadBand_Y)) / (JoyStickCenter - DeadBand_Y)) * MaxDriveSpeed;
+		ELSIF (JoyStick_Y < (JoyStickCenter - DeadBand_Y)) THEN
+			DriveVelInput := (INT_TO_REAL(JoyStick_Y - (JoyStickCenter - DeadBand_Y)) / (JoyStickCenter - DeadBand_Y)) * MaxDriveSpeed;
+		ELSE
+			DriveVelInput := 0;
+		END_IF
+		
+		(*Calculates wheel angles needed to achieve the commanded steering angle*)
+		CalcWheelAngle(SteeringAngleInput);					
+		
+		(*Calculates differential velocities of the left and right wheels*)
+		CalcDiffVelocity(DriveVelInput);				
+		
+		(*Sets the Sevcon target velocities equal to the calculated values and applies unit scaling*)
+		DriveLeft.TargetVelocity := LREAL_TO_UDINT((LeftVelCommand / (3.14 * DriveWheelDiameter)) * DriveWheelGearRatio * DriveWheelEncoderRes);
+		DriveRight.TargetVelocity := LREAL_TO_UDINT((RightVelCommand / (3.14 * DriveWheelDiameter)) * DriveWheelGearRatio * DriveWheelEncoderRes);
+		
+		(*Sets the PD4 steering motors to the correct positions*)
+		SteerLeft.TargetPosition := -LREAL_TO_DINT(LeftWheelAngleCommand * ((SteeringEncoderRes * SteeringGearRatio) / 360));		// Negative for motor dir
+		SteerRight.TargetPosition := -LREAL_TO_DINT(RightWheelAngleCommand * ((SteeringEncoderRes * SteeringGearRatio) / 360));		// Negative for motor dir
+		
+		ReadButton();
+		
+		IF NOT ManualDriveEnable THEN
+			DriveLeft.TargetVelocity := 0;
+			DriveRight.TargetVelocity := 0;
+			DriveLeft.Enable := FALSE;
+			DriveRight.Enable := FALSE;
+			SteerLeft.Enable := FALSE;
+			SteerRight.Enable := FALSE;
+			State := IDLE;
+		END_IF
+		
+	AUTO:
+		IF StateEntry THEN
+			TimeInState := T#0MS;
+			DriveLeft.Enable := TRUE;
+			DriveRight.Enable := TRUE;
+			SteerLeft.Enable := TRUE;
+			SteerRight.Enable := TRUE;
+		END_IF
+		
+		(*Calculates wheel angles needed to achieve the commanded steering angle*)
+		CalcWheelAngle(SteeringAngleInput);					
+		
+		(*Calculates differential velocities of the left and right wheels*)
+		CalcDiffVelocity(DriveVelInput);	
+		
+		(*Sets the Sevcon target velocities equal to the calculated values and applies unit scaling*)
+		DriveLeft.TargetVelocity := LREAL_TO_UDINT((LeftVelCommand / (3.14 * DriveWheelDiameter)) * DriveWheelGearRatio * DriveWheelEncoderRes);
+		DriveRight.TargetVelocity := LREAL_TO_UDINT((RightVelCommand / (3.14 * DriveWheelDiameter)) * DriveWheelGearRatio * DriveWheelEncoderRes);
+		
+		(*Sets the PD6 steering motors to the correct positions*)
+		SteerLeft.TargetPosition := LREAL_TO_DINT(LeftWheelAngleCommand * ((SteeringEncoderRes * SteeringGearRatio) / 360));
+		SteerRight.TargetPosition := LREAL_TO_DINT(RightWheelAngleCommand * ((SteeringEncoderRes * SteeringGearRatio) / 360));
+		
+		IF NOT AutoDriveEnable THEN
+			DriveLeft.TargetVelocity := 0;
+			DriveRight.TargetVelocity := 0;
+			DriveLeft.Enable := FALSE;
+			DriveRight.Enable := FALSE;
+			SteerLeft.Enable := FALSE;
+			SteerRight.Enable := FALSE;
+			State := IDLE;
+		END_IF
+		
+	ERROR:
+		IF StateEntry THEN
+			Error := TRUE;
+			Ready := FALSE;
+			HARV.ErrorLog.AddMsg(TimeStamp := HARV.TimeTracker.TimeStamp, Location := 'DRIVE', ErrorCode := 9999, Description := 'Drive Test');
+			TimeInState := T#0MS;
+		END_IF
+		
+		IF ErrorReset THEN
+			DriveLeft.ErrorReset := TRUE;
+			DriveRight.ErrorReset := TRUE;
+			SteerLeft.ErrorReset := TRUE;
+			SteerRight.ErrorReset := TRUE;
+			IF (NOT DriveLeft.Error) AND (NOT DriveRight.Error) AND (NOT SteerLeft.Error) AND (NOT SteerRight.Error) THEN
+				Error := FALSE;
+				ErrorReset := FALSE;
+				State := IDLE;
+			END_IF
+		END_IF
+END_CASE
+
+(*Updates Index 0 of the Drive Message Structure with current drive state info*)
+//IF DriveMsgUpdateTimer.Q THEN
+//	HARV.DriveLog.AddMsg(TimeStamp 			:= HARV.TimeTracker.TimeStamp,
+//						LeftVelocity 		:= DriveLeft.PD6_IN.ActualVelocity,
+//						LeftSteeringAngle 	:= LeftWheelAngleActual,
+//						RightSteeringAngle 	:= RightWheelAngleActual,
+//						LeftCurrent 		:= DriveLeft.PD6_IN.ActiveCurrent,
+//						LeftStatusCode 		:= DriveLeft.PD6_IN.StatusWord,
+//						RightVelocity 		:= DriveRight.PD6_IN.ActualVelocity,
+//						RightCurrent 		:= DriveRight.PD6_IN.ActiveCurrent,
+//						RightStatusCode 	:= DriveRight.PD6_IN.StatusWord);
+//	DriveMsgUpdateTimer.IN := FALSE;
+//ELSE
+//	DriveMsgUpdateTimer.IN := TRUE;
+//END_IF
+
+(*Read actual drive velocities from the SEVCONS in mm/s*)
+LeftVelActual := DriveLeft.SEVCON_IN.ActualVelocity;
+RightVelActual := DriveRight.SEVCON_IN.ActualVelocity;
+
+(*Read actual wheel positions and calculate actual wheel angles in degrees from steering motors*)
+LeftWheelAngleActual := SteerLeft.PD4_IN.ActualPosition;	// Need to convert to degrees
+RightWheelAngleActual := SteerRight.PD4_IN.ActualPosition;	// Need to convery to degrees
+
+TimeInState := TimeInState + T#2MS;
+//DriveMsgUpdateTimer();
+DriveLeft(SEVCON_IN := DriveLeftIN);
+DriveRight(SEVCON_IN := DriveRightIN);
+SteerLeft(PD4_IN := SteerLeftIN);
+SteerRight(PD4_IN := SteerRightIN);
+
+]]></ST>
+    </Implementation>
+    <Method Name="CalcDiffVelocity" Id="{18f3fb16-aaf8-4a6b-8485-6a7620769c7e}">
+      <Declaration><![CDATA[METHOD CalcDiffVelocity : BOOL
+VAR_INPUT
+	DriveVelInput	: LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SteeringAngleInput <> 0 THEN
+	LeftVelCommand := DriveVelInput * (ICC_R + (CONFIG.RearTrackWidth / 2)) / ICC_R;
+	RightVelCommand := DriveVelInput * (ICC_R - (CONFIG.RearTrackWidth / 2)) / ICC_R;
+ELSE
+	LeftVelCommand := DriveVelInput;
+	RightVelCommand := DriveVelInput;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CalcWheelAngle" Id="{e3670caa-28bd-4ff4-b1b0-5ff29a695a5c}">
+      <Declaration><![CDATA[METHOD CalcWheelAngle : BOOL
+VAR_INPUT
+	SteeringAngleInput	: LREAL;		// degrees
+END_VAR
+VAR
+	RightWheelCenterAngle	: LREAL;
+	RightSteerCenterAngle	: LREAL;
+	LeftWheelCenterAngle	: LREAL;
+	LeftSteerCenterAngle	: LREAL;
+	EffectiveWheelBase		: REAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[EffectiveWheelBase := CONFIG.WheelBase + CONFIG.CasterOffset;
+
+IF SteeringAngleInput > MaxSteeringAngle THEN
+	ICC_R := CONFIG.WheelBase / TAN(DEG_TO_RAD(MaxSteeringAngle));
+ELSIF SteeringAngleInput < -MaxSteeringAngle THEN
+	ICC_R := CONFIG.WheelBase / TAN(DEG_TO_RAD(-MaxSteeringAngle));
+ELSE
+	ICC_R := CONFIG.WheelBase / TAN(DEG_TO_RAD(SteeringAngleInput));		// Calculate radius of curvature relative to the ICC
+END_IF
+
+RightWheelCenterAngle := RAD_TO_DEG(ATAN(EffectiveWheelBase/(ICC_R - (CONFIG.FrontTrackWidth / 2)))); 
+LeftWheelCenterAngle := RAD_TO_DEG(ATAN(EffectiveWheelBase/(ICC_R + (CONFIG.FrontTrackWidth / 2))));
+
+RightSteerCenterAngle := RAD_TO_DEG(ASIN((CONFIG.CasterOffset)/(SQRT(EXPT((ICC_R - (CONFIG.FrontTrackWidth / 2)),2) + EXPT(EffectiveWheelBase,2)))));
+LeftSteerCenterAngle := RAD_TO_DEG(ASIN((CONFIG.CasterOffset)/(SQRT(EXPT((ICC_R + (CONFIG.FrontTrackWidth / 2)),2) + EXPT(EffectiveWheelBase,2)))));
+
+IF SteeringAngleInput < 0 THEN
+	RightWheelAngleCommand := RightWheelCenterAngle + RightSteerCenterAngle;
+	LeftWheelAngleCommand := LeftWheelCenterAngle + LeftSteerCenterAngle;
+ELSE
+	RightWheelAngleCommand := RightWheelCenterAngle - RightSteerCenterAngle;
+	LeftWheelAngleCommand := LeftWheelCenterAngle - LeftSteerCenterAngle;
+END_IF
+
+SteerLeftAngleTest := LeftWheelAngleCommand;
+SteerRightAngleTest	:= RightWheelAngleCommand;
+
+//RightWheelAngle := RAD_TO_DEG(ATAN(CONFIG.WheelBase/(ICC_R - (CONFIG.FrontTrackWidth / 2))));
+//LeftWheelAngle := RAD_TO_DEG(ATAN(CONFIG.WheelBase/(ICC_R + (CONFIG.FrontTrackWidth / 2))));
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="ReadButton" Id="{cdb7831c-f5e8-4b62-8e1c-9928f949da42}">
+      <Declaration><![CDATA[METHOD ReadButton : BOOL
+VAR
+	SwitchThreshold	: INT := 1000;
+	LowThreshold 	: INT := 500;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF JoyStick_Button > SwitchThreshold THEN
+	ManualDriveEnable := FALSE;
+ELSIF JoyStick_Button < SwitchThreshold AND JoyStick_Button > LowThreshold THEN
+	ManualDriveEnable := TRUE;
+ELSE
+	//ManualDriveEnable := FALSE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_DRIVE">
+      <LineId Id="57" Count="0" />
+      <LineId Id="285" Count="1" />
+      <LineId Id="299" Count="0" />
+      <LineId Id="293" Count="0" />
+      <LineId Id="291" Count="0" />
+      <LineId Id="294" Count="0" />
+      <LineId Id="292" Count="0" />
+      <LineId Id="295" Count="2" />
+      <LineId Id="283" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="20" Count="2" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="787" Count="3" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="55" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="41" Count="1" />
+      <LineId Id="407" Count="2" />
+      <LineId Id="795" Count="1" />
+      <LineId Id="799" Count="0" />
+      <LineId Id="525" Count="0" />
+      <LineId Id="791" Count="0" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="516" Count="0" />
+      <LineId Id="793" Count="1" />
+      <LineId Id="413" Count="0" />
+      <LineId Id="415" Count="0" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="414" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="45" Count="1" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="176" Count="0" />
+      <LineId Id="610" Count="1" />
+      <LineId Id="90" Count="1" />
+      <LineId Id="240" Count="1" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="47" Count="1" />
+      <LineId Id="182" Count="1" />
+      <LineId Id="418" Count="1" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="239" Count="0" />
+      <LineId Id="99" Count="0" />
+      <LineId Id="255" Count="0" />
+      <LineId Id="257" Count="0" />
+      <LineId Id="265" Count="0" />
+      <LineId Id="264" Count="0" />
+      <LineId Id="258" Count="0" />
+      <LineId Id="256" Count="0" />
+      <LineId Id="259" Count="0" />
+      <LineId Id="268" Count="0" />
+      <LineId Id="260" Count="0" />
+      <LineId Id="254" Count="0" />
+      <LineId Id="266" Count="1" />
+      <LineId Id="262" Count="1" />
+      <LineId Id="261" Count="0" />
+      <LineId Id="100" Count="0" />
+      <LineId Id="110" Count="0" />
+      <LineId Id="236" Count="0" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="237" Count="0" />
+      <LineId Id="161" Count="0" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="238" Count="0" />
+      <LineId Id="106" Count="1" />
+      <LineId Id="278" Count="3" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="612" Count="1" />
+      <LineId Id="94" Count="1" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="184" Count="1" />
+      <LineId Id="420" Count="1" />
+      <LineId Id="98" Count="0" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="53" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="49" Count="1" />
+      <LineId Id="376" Count="1" />
+      <LineId Id="425" Count="1" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="378" Count="0" />
+      <LineId Id="388" Count="11" />
+      <LineId Id="386" Count="1" />
+      <LineId Id="379" Count="0" />
+      <LineId Id="382" Count="3" />
+      <LineId Id="423" Count="1" />
+      <LineId Id="380" Count="1" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="440" Count="1" />
+      <LineId Id="61" Count="0" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="427" Count="1" />
+      <LineId Id="434" Count="1" />
+      <LineId Id="432" Count="1" />
+      <LineId Id="436" Count="1" />
+      <LineId Id="442" Count="0" />
+      <LineId Id="439" Count="0" />
+      <LineId Id="438" Count="0" />
+      <LineId Id="430" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="247" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="694" Count="12" />
+      <LineId Id="74" Count="0" />
+      <LineId Id="375" Count="0" />
+      <LineId Id="311" Count="0" />
+      <LineId Id="521" Count="1" />
+      <LineId Id="374" Count="0" />
+      <LineId Id="372" Count="0" />
+      <LineId Id="371" Count="0" />
+      <LineId Id="373" Count="0" />
+      <LineId Id="308" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="523" Count="1" />
+      <LineId Id="416" Count="1" />
+      <LineId Id="301" Count="0" />
+      <LineId Id="300" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DRIVE.CalcDiffVelocity">
+      <LineId Id="9" Count="0" />
+      <LineId Id="1" Count="1" />
+      <LineId Id="10" Count="1" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="12" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DRIVE.CalcWheelAngle">
+      <LineId Id="39" Count="0" />
+      <LineId Id="85" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="86" Count="0" />
+      <LineId Id="88" Count="3" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="28" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="53" Count="2" />
+      <LineId Id="57" Count="2" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="72" Count="1" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="4" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_DRIVE.ReadButton">
+      <LineId Id="5" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="9" Count="3" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

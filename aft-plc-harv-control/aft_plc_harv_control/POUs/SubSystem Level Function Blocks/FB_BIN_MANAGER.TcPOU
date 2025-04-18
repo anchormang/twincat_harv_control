@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_BIN_MANAGER" Id="{40c5c23c-1578-445e-b6b1-2a2174ba3b30}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_BIN_MANAGER
+VAR_INPUT
+	Enable	: BOOL;
+END_VAR
+VAR_OUTPUT
+	FrontForkValve	: FB_HYDRAULIC_VALVE;
+	RearForkValve	: FB_HYDRAULIC_VALVE;
+	GateStop		: BOOL;
+	Error			: BOOL;
+	Ready			: BOOL;
+END_VAR
+VAR
+	State 		: (DEFAULT, INIT, IDLE, LOAD, UNLOAD, ERROR);
+	PrevState	: (DEFAULT, INIT, IDLE, LOAD, UNLOAD, ERROR);
+	StateEntry	: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+IF State <> PrevState THEN
+	StateEntry := TRUE;
+	PrevState := State;
+ELSE
+	StateEntry := FALSE;
+END_IF
+
+CASE State OF
+	DEFAULT:
+		//
+	INIT:
+		//
+	IDLE:
+		//
+	LOAD:
+		//
+	UNLOAD:
+		//
+	ERROR:
+		//
+END_CASE]]></ST>
+    </Implementation>
+    <LineIds Name="FB_BIN_MANAGER">
+      <LineId Id="22" Count="1" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="26" Count="3" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="33" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

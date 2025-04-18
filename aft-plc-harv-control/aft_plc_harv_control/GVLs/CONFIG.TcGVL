@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="CONFIG" Id="{877a71f0-b489-4733-a0fb-7c3ce879edd3}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL
+	
+	DriveWheelWidth			: REAL := 8.0;
+	
+	SteeringWheelWidth		: REAL := 5.0;
+	WheelBase				: REAL := 137.0;		// Distance between the drive wheels and steering wheels center to center
+	FrontTrackWidth			: REAL := 60;		// Distance between the two drive wheels center to center
+	RearTrackWidth			: REAL := 72;		// inches
+	CasterOffset			: REAL := 8.0;		// Distance between wheel center and rotation center on the steering axes
+	
+	SevCon_Port				: ARRAY[0..1] OF WORD := [16#1001, 16#1002];	// Drive Right, Drive Left
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

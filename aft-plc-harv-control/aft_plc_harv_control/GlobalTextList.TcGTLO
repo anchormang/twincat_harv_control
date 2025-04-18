@@ -1,0 +1,544 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.15">
+  <GlobalTextList Name="GlobalTextList" Id="{6a61bef1-d7b9-4e35-a387-385b14fa1372}">
+    <XmlArchive>
+      <Data>
+        <o xml:space="preserve" t="GlobalTextListObject">
+          <l n="TextList" t="ArrayList" cet="TextListRow">
+            <o>
+              <v n="TextID">"759"</v>
+              <v n="TextDefault">""</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"183"</v>
+              <v n="TextDefault">"%.0f"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"278"</v>
+              <v n="TextDefault">"%.1f"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"808"</v>
+              <v n="TextDefault">"%2.2f"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"490"</v>
+              <v n="TextDefault">"%3.2f"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"964"</v>
+              <v n="TextDefault">"%4.2f"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"954"</v>
+              <v n="TextDefault">"%s"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"65"</v>
+              <v n="TextDefault">"%S"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"73"</v>
+              <v n="TextDefault">"%s '%'"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"561"</v>
+              <v n="TextDefault">"%s%"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"480"</v>
+              <v n="TextDefault">"%t[ddd MMM dd',' yyyy hh:mm tt]"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"560"</v>
+              <v n="TextDefault">"%t[ddd MMM dd',' yyyy hh:mm:ss tt]"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"888"</v>
+              <v n="TextDefault">"+"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"17"</v>
+              <v n="TextDefault">"+/- TRIM"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"604"</v>
+              <v n="TextDefault">"+5"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"792"</v>
+              <v n="TextDefault">"-"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"397"</v>
+              <v n="TextDefault">"-1.2"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"393"</v>
+              <v n="TextDefault">"40"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"782"</v>
+              <v n="TextDefault">"50%"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"199"</v>
+              <v n="TextDefault">"8.5"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"116"</v>
+              <v n="TextDefault">"&lt;"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"886"</v>
+              <v n="TextDefault">"&gt;"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"203"</v>
+              <v n="TextDefault">"Acres / Hour"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"48"</v>
+              <v n="TextDefault">"Apples / Hour"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"826"</v>
+              <v n="TextDefault">"Auto"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"563"</v>
+              <v n="TextDefault">"Auto-Level"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"929"</v>
+              <v n="TextDefault">"Bin Filler"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"143"</v>
+              <v n="TextDefault">"Bin Filler Adjustments"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"595"</v>
+              <v n="TextDefault">"Binfiller"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"700"</v>
+              <v n="TextDefault">"Binfiller Status"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"928"</v>
+              <v n="TextDefault">"Button 1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"967"</v>
+              <v n="TextDefault">"Button 2"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"885"</v>
+              <v n="TextDefault">"Button 3"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"296"</v>
+              <v n="TextDefault">"Button 4"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"530"</v>
+              <v n="TextDefault">"Camera lens dirty"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"887"</v>
+              <v n="TextDefault">"Color Threshold"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"35"</v>
+              <v n="TextDefault">"Culling Threshold"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"800"</v>
+              <v n="TextDefault">"Degrees"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"897"</v>
+              <v n="TextDefault">"Disable"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"467"</v>
+              <v n="TextDefault">"Drive Speed"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"256"</v>
+              <v n="TextDefault">"Drive Speed (Acres / Hr)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"845"</v>
+              <v n="TextDefault">"Drive Velocity"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"657"</v>
+              <v n="TextDefault">"Drive Velocity (m/s)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"834"</v>
+              <v n="TextDefault">"Drive Velocity (mm/s)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"856"</v>
+              <v n="TextDefault">"Drive: Auto"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"591"</v>
+              <v n="TextDefault">"Estimated APH"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"171"</v>
+              <v n="TextDefault">"Front"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"361"</v>
+              <v n="TextDefault">"IMU Roll Input"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"562"</v>
+              <v n="TextDefault">"Joystick Position X"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"301"</v>
+              <v n="TextDefault">"Joystick Position Y"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"181"</v>
+              <v n="TextDefault">"Left Displacement (in)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"53"</v>
+              <v n="TextDefault">"Left Displacement (mm)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"589"</v>
+              <v n="TextDefault">"Left Wheel Angle"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"838"</v>
+              <v n="TextDefault">"Left Wheel Velocity"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"209"</v>
+              <v n="TextDefault">"Left Wheel Velocity (m/s)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"466"</v>
+              <v n="TextDefault">"Left Wheel Velocity (mm/s)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"395"</v>
+              <v n="TextDefault">"Low grip success % detected"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"211"</v>
+              <v n="TextDefault">"Low grip success detected"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"488"</v>
+              <v n="TextDefault">"Low grip success, check vac"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"128"</v>
+              <v n="TextDefault">"Lower"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"699"</v>
+              <v n="TextDefault">"Manual"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"679"</v>
+              <v n="TextDefault">"Max Bin Fill Height"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"334"</v>
+              <v n="TextDefault">"Pick Rate"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"762"</v>
+              <v n="TextDefault">"Pick Rate (Apples / Hr)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"987"</v>
+              <v n="TextDefault">"Pitch"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"241"</v>
+              <v n="TextDefault">"Pitch (+)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"275"</v>
+              <v n="TextDefault">"Pitch (-)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"314"</v>
+              <v n="TextDefault">"Pitch Angle"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"86"</v>
+              <v n="TextDefault">"Pump"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"520"</v>
+              <v n="TextDefault">"Radius of Curvature"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"849"</v>
+              <v n="TextDefault">"Radius of Curvature (in)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"955"</v>
+              <v n="TextDefault">"Raise"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"524"</v>
+              <v n="TextDefault">"Right Displacement (in)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"764"</v>
+              <v n="TextDefault">"Right Displacement (mm)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"942"</v>
+              <v n="TextDefault">"Right Wheel Angle"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"758"</v>
+              <v n="TextDefault">"Right Wheel Velocity"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"889"</v>
+              <v n="TextDefault">"Right Wheel Velocity (m/s)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"895"</v>
+              <v n="TextDefault">"Right Wheel Velocity (mm/s)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"34"</v>
+              <v n="TextDefault">"Robot"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"172"</v>
+              <v n="TextDefault">"Robot 1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"316"</v>
+              <v n="TextDefault">"Robot 10"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"930"</v>
+              <v n="TextDefault">"Robot 11"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"366"</v>
+              <v n="TextDefault">"Robot 12"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"713"</v>
+              <v n="TextDefault">"Robot 2"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"313"</v>
+              <v n="TextDefault">"Robot 3"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"732"</v>
+              <v n="TextDefault">"Robot 4"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"224"</v>
+              <v n="TextDefault">"Robot 5"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"39"</v>
+              <v n="TextDefault">"Robot 6"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"390"</v>
+              <v n="TextDefault">"Robot 7"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"656"</v>
+              <v n="TextDefault">"Robot 8"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"593"</v>
+              <v n="TextDefault">"Robot 89"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"148"</v>
+              <v n="TextDefault">"Robot 9"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"760"</v>
+              <v n="TextDefault">"Robot Status"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"547"</v>
+              <v n="TextDefault">"Roll (+)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"194"</v>
+              <v n="TextDefault">"Roll (-)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"152"</v>
+              <v n="TextDefault">"Roll Angle"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"450"</v>
+              <v n="TextDefault">"Slope Angle (Degrees)"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"614"</v>
+              <v n="TextDefault">"Steering Angle"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"877"</v>
+              <v n="TextDefault">"W"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"981"</v>
+              <v n="TextDefault">"Zone 1"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"544"</v>
+              <v n="TextDefault">"Zone 2"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"277"</v>
+              <v n="TextDefault">"Zone 3"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"495"</v>
+              <v n="TextDefault">"Zone 4"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"774"</v>
+              <v n="TextDefault">"^"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+          </l>
+          <l n="Languages" t="ArrayList" />
+          <v n="GuidInit">{d8c3a58a-15b8-49ec-ac06-0ad048340a3e}</v>
+          <v n="GuidReInit">{b455340f-2ce3-4bb8-845e-f0f0cbf3f51d}</v>
+          <v n="GuidExitX">{0c2d25a4-0ccc-4acd-a599-f74f4155ab92}</v>
+        </o>
+      </Data>
+      <TypeList>
+        <Type n="ArrayList">System.Collections.ArrayList</Type>
+        <Type n="GlobalTextListObject">{63784cbb-9ba0-45e6-9d69-babf3f040511}</Type>
+        <Type n="Guid">System.Guid</Type>
+        <Type n="String">System.String</Type>
+        <Type n="TextListRow">{53da1be7-ad25-47c3-b0e8-e26286dad2e0}</Type>
+      </TypeList>
+    </XmlArchive>
+  </GlobalTextList>
+</TcPlcObject>

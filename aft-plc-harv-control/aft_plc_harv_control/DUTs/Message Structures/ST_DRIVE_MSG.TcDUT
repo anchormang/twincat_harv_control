@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_DRIVE_MSG" Id="{0bf4b1b2-f312-46d6-a1dc-97eef68cde81}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_DRIVE_MSG :
+STRUCT
+	TimeStamp			: DT;
+	LeftVelocity		: INT;
+	RightVelocity		: INT;
+	LeftSteeringAngle	: LREAL;
+	RightSteeringAngle	: LREAL;
+	LeftCurrent			: REAL;
+	RightCurrent		: REAL;
+	LeftStatusCode		: UINT;
+	RightStatusCode		: UINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

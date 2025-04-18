@@ -1,0 +1,301 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_SEVCON" Id="{fa8afbbe-0b03-4d05-b50b-1bef3d1e5672}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_SEVCON
+VAR_INPUT
+	SEVCON_IN 		: ST_SEVCON_IN;
+	Enable			: BOOL;
+	ErrorReset		: BOOL;
+	TargetVelocity	: UDINT;
+	Self			: INT;
+END_VAR
+VAR_OUTPUT
+	SEVCON_OUT : ST_SEVCON_OUT;
+	Error		: BOOL;
+	ErrorCode	: INT;
+	Ready		: BOOL;
+	Running		: BOOL;
+END_VAR
+VAR
+	State		: (DEFAULT, INIT, SWITCH_ON_DISABLED, READY_TO_SWITCH_ON, SWITCHED_ON, OPERATION_ENABLED, ERROR);
+	PrevState 	: (DEFAULT, INIT, SWITCH_ON_DISABLED, READY_TO_SWITCH_ON, SWITCHED_ON, OPERATION_ENABLED, ERROR);
+	TimeInState	: TIME;
+	StateEntry 	: BOOL;
+	SwitchOn	: BOOL;
+	SDO_Write		: FB_SDO_WRITE;
+	SDO_WriteData	: ARRAY[0..255] OF BYTE;
+	SDO_Read		: FB_SDO_READ;
+	SDO_ReadData	: ARRAY[0..255] OF BYTE;
+	PreChargeTimer	: TON;
+	PreChargeDelay	: TIME := T#3S;
+	PreChargeActive	: BOOL;
+	
+	HiSpeedKp		: BYTE;
+	HiSpeedKi		: BYTE;
+	LoSpeedKp		: BYTE;
+	LoSpeedKi		: BYTE;
+END_VAR
+VAR CONSTANT
+	VoltageMult		: REAL := 0.0625;	// Multiply by voltage params for actual voltages
+	MinCapVoltage	: REAL := 40.0;		// check w/ Cedric
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+IF State <> PrevState THEN
+	StateEntry := TRUE;
+	PrevState := State;
+ELSE
+	StateEntry := FALSE;
+END_IF
+
+CASE State OF
+	DEFAULT:
+		State := INIT;
+		
+	INIT:
+		// Set initial parameters
+		
+		Ready := FALSE;
+		SEVCON_OUT.ControlWord := SevConControlWord.DisableVoltage;
+		PreChargeTimer.PT := PreChargeDelay;
+		
+		State := SWITCH_ON_DISABLED;
+		
+		
+	SWITCH_ON_DISABLED:
+		IF StateEntry THEN
+			SEVCON_OUT.ControlWord := SevConControlWord.DisableVoltage;
+			SEVCON_OUT.TargetVelocity := 0;
+			SEVCON_OUT.ContactorOutput := 0;
+			SEVCON_OUT.BrakeOutput := 0;
+		END_IF
+		
+		IF (SEVCON_IN.StatusWord AND SevConStatusWord.SwitchOnDisabled) = SevConStatusWord.SwitchOnDisabled THEN
+			SEVCON_OUT.ControlWord := SevConControlWord.Shutdown;
+			State := READY_TO_SWITCH_ON;
+		END_IF
+		
+	READY_TO_SWITCH_ON:
+		IF StateEntry THEN
+			IF (SEVCON_IN.CapacitorVoltage * VoltageMult) < MinCapVoltage THEN
+				PreCharge(TRUE);
+			END_IF
+			PreChargeTimer.IN := TRUE;
+		END_IF
+		
+		IF ((SEVCON_IN.CapacitorVoltage * VoltageMult) > MinCapVoltage) AND PreChargeTimer.Q THEN
+			SEVCON_OUT.ContactorOutput := 65535;
+			PreCharge(FALSE);
+			SwitchOn := TRUE;
+			PreChargeTimer.IN := FALSE;
+		END_IF
+		
+		IF SwitchOn AND ((SEVCON_IN.StatusWord AND SevConStatusWord.ReadyToSwitchon) = SevConStatusWord.ReadyToSwitchon) THEN
+			SEVCON_OUT.ControlWord := SevConControlWord.SwitchOn;
+			State := SWITCHED_ON;
+		END_IF
+	
+	SWITCHED_ON:
+		IF StateEntry THEN
+			//
+		END_IF
+		
+		IF (SEVCON_IN.StatusWord AND SevConStatusWord.Switchedon) = SevConStatusWord.Switchedon THEN
+			Ready := TRUE;
+		ELSE
+			Ready := FALSE;
+		END_IF
+		
+		IF Enable AND Ready THEN
+			SEVCON_OUT.ControlWord := SevConControlWord.EnableOperation;
+			State := OPERATION_ENABLED;
+		END_IF
+
+	OPERATION_ENABLED:
+		IF StateEntry THEN
+			SEVCON_OUT.BrakeOutput := 65535;
+			Running := TRUE;
+		END_IF
+		
+		IF NOT Enable THEN
+			Running := FALSE;
+			SEVCON_OUT.TargetVelocity := 0;
+			IF SEVCON_IN.ActualVelocity = 0 THEN
+				SEVCON_OUT.BrakeOutput := 0;
+				SEVCON_OUT.ControlWord := SevConControlWord.DisableOperation;
+				State := SWITCHED_ON;
+			END_IF
+		ELSE
+			SEVCON_OUT.TargetVelocity := TargetVelocity;
+		END_IF
+	
+	ERROR:
+		IF StateEntry THEN
+			Ready := FALSE;
+			Error := TRUE;
+		END_IF
+		
+		IF ErrorReset THEN
+			SEVCON_OUT.ControlWord := SevConControlWord.FaultReset;
+			IF (SEVCON_IN.StatusWord AND SevConStatusWord.Fault) = 0 THEN
+				Error := FALSE;
+				ErrorReset := FALSE;
+				State := SWITCH_ON_DISABLED;
+			END_IF
+		END_IF
+END_CASE
+
+IF (SEVCON_IN.StatusWord AND SevConStatusWord.Fault) = SevConStatusWord.Fault THEN
+	State := ERROR;
+END_IF
+
+PreChargeTimer();
+
+]]></ST>
+    </Implementation>
+    <Method Name="PreCharge" Id="{9fae63e7-38c4-497a-94a0-fc720c1b8126}">
+      <Declaration><![CDATA[METHOD PreCharge : BOOL
+VAR_INPUT
+	Start	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF Start THEN
+	SDO_WriteData[0] := 16#1;
+	PreChargeActive := TRUE;
+ELSIF NOT Start THEN
+	SDO_WriteData[0] := 16#0;
+	PreChargeActive := FALSE;
+END_IF
+
+SDO_WRITE(ADSNetID := '5.117.40.235.3.1',
+		PortNr := CONFIG.SevCon_Port[self-1],
+		CO_Index := INDEX.PreChargeActivate,
+		CO_SubIndex := 0,
+		DataLength := 1,
+		StartWriting := TRUE,
+		WriteData := SDO_WriteData);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="WriteTuningValues" Id="{88024c27-4d5f-4cf4-8dd4-05097a24b55a}">
+      <Declaration><![CDATA[METHOD WriteTuningValues : BOOL
+VAR_INPUT
+	KpHi	: BYTE;
+	KiHi	: BYTE;
+	KpLo	: BYTE;
+	KiLo	: BYTE;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_SEVCON">
+      <LineId Id="301" Count="1" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="32" Count="2" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="36" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="37" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="51" Count="0" />
+      <LineId Id="39" Count="0" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="227" Count="0" />
+      <LineId Id="186" Count="0" />
+      <LineId Id="183" Count="0" />
+      <LineId Id="259" Count="0" />
+      <LineId Id="166" Count="1" />
+      <LineId Id="49" Count="1" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="52" Count="1" />
+      <LineId Id="187" Count="0" />
+      <LineId Id="255" Count="1" />
+      <LineId Id="54" Count="2" />
+      <LineId Id="184" Count="0" />
+      <LineId Id="57" Count="2" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="217" Count="0" />
+      <LineId Id="247" Count="0" />
+      <LineId Id="225" Count="0" />
+      <LineId Id="248" Count="0" />
+      <LineId Id="262" Count="0" />
+      <LineId Id="219" Count="0" />
+      <LineId Id="228" Count="0" />
+      <LineId Id="232" Count="0" />
+      <LineId Id="241" Count="0" />
+      <LineId Id="243" Count="0" />
+      <LineId Id="245" Count="0" />
+      <LineId Id="263" Count="0" />
+      <LineId Id="242" Count="0" />
+      <LineId Id="229" Count="0" />
+      <LineId Id="62" Count="0" />
+      <LineId Id="181" Count="0" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="66" Count="1" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="157" Count="0" />
+      <LineId Id="165" Count="0" />
+      <LineId Id="159" Count="0" />
+      <LineId Id="207" Count="2" />
+      <LineId Id="212" Count="1" />
+      <LineId Id="210" Count="0" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="163" Count="0" />
+      <LineId Id="182" Count="0" />
+      <LineId Id="164" Count="0" />
+      <LineId Id="140" Count="0" />
+      <LineId Id="135" Count="0" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="144" Count="0" />
+      <LineId Id="264" Count="0" />
+      <LineId Id="145" Count="0" />
+      <LineId Id="147" Count="3" />
+      <LineId Id="180" Count="0" />
+      <LineId Id="265" Count="0" />
+      <LineId Id="269" Count="0" />
+      <LineId Id="266" Count="0" />
+      <LineId Id="268" Count="0" />
+      <LineId Id="267" Count="0" />
+      <LineId Id="270" Count="0" />
+      <LineId Id="151" Count="0" />
+      <LineId Id="143" Count="0" />
+      <LineId Id="136" Count="0" />
+      <LineId Id="42" Count="0" />
+      <LineId Id="68" Count="0" />
+      <LineId Id="80" Count="0" />
+      <LineId Id="69" Count="1" />
+      <LineId Id="72" Count="1" />
+      <LineId Id="172" Count="1" />
+      <LineId Id="176" Count="1" />
+      <LineId Id="174" Count="1" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="38" Count="0" />
+      <LineId Id="82" Count="0" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="170" Count="1" />
+      <LineId Id="261" Count="0" />
+      <LineId Id="260" Count="0" />
+      <LineId Id="300" Count="0" />
+      <LineId Id="299" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_SEVCON.PreCharge">
+      <LineId Id="5" Count="0" />
+      <LineId Id="7" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="8" Count="0" />
+      <LineId Id="11" Count="6" />
+      <LineId Id="10" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_SEVCON.WriteTuningValues">
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="PD4ControlWord" Id="{fb1f42ff-41f9-0f2e-2d29-2e09d409965c}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE PD4ControlWord :
+(
+	Shutdown := 6,					// 2#0000_0110	
+	SwitchOn := 7,					// 0xxx 0111 (Trasition from Ready to Switch On -> Switched On)
+	SwitchOnOperationEnable := 15,	// 0xxx 1111 (Switch On and Enable Operation)
+	StartHoming:= 16,
+	PulseInhibit := 0,				// 0xxx xx0x (activate quick stop and disable)
+	QuickStop := 2,					// 0xxx x01x
+	DisableOperation := 7,			// 0xxx 0111 (Transition from OpEnable -> Switched On)
+	EnableOperation := 2#00101111,			// 0x1x 1111
+	FaultReset := 128,				// 1xxx xxxx
+	StartMove := 2#00010000,				// xxx1 1111
+	AbsoluteMotion := 2#00100000
+	// Positive := 64,					// x1xx xxxx
+	// Negative :=	0					// x0xx xxxx
+)BYTE;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>
